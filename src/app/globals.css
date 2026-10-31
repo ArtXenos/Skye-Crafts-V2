@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/*
+  Skye Crafts design tokens.
+  Plum ink, bloom pink and wire gold continue the shop's existing brand;
+  leaf green marks good news (in stock, confirmed). Everything else is quiet
+  so the wire motif in the hero can be the one memorable thing.
+*/
+@theme {
+  --color-ink: #4a2230;
+  --color-ink-soft: #6a4b57;
+  --color-bloom: #e7a3b6;
+  --color-bloom-deep: #a8435f;
+  --color-petal: #fbe8ee;
+  --color-paper: #fff9fa;
+  --color-wire: #8a6416;
+  --color-leaf: #4f7350;
+  --color-leaf-soft: #e4efe2;
+  --color-alert: #a33a2c;
+  --color-alert-soft: #fbe6e1;
+  --color-line: #ecd6dd;
+
+  --font-display: var(--font-caprasimo), Georgia, serif;
+  --font-sans: var(--font-figtree), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-tile: 1.5rem;
+  --radius-field: 0.75rem;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-bloom-deep);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-bloom);
+    color: var(--color-ink);
+  }
+}
+
+/* The wire motif: a stroke that draws itself in once, on page load. */
+@keyframes wire-draw {
+  from { stroke-dashoffset: var(--wire-length, 600); }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes bloom-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
+}
+.wire-draw {
+  stroke-dasharray: var(--wire-length, 600);
+  stroke-dashoffset: 0;
+  animation: wire-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) both;
+  animation-delay: var(--wire-delay, 0s);
+}
+.bloom-in {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bloom-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: var(--bloom-delay, 1.2s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .wire-draw,
+  .bloom-in {
+    animation: none;
+  }
+}
