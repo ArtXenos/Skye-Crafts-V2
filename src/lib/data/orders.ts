@@ -1,5 +1,6 @@
 import "server-only";
 
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 // The logged-in customer's own data. Never cached across people: these run
@@ -42,6 +43,7 @@ export async function getOrderPrivateDetails(id: number) {
 }
 
 export async function getMyCustomRequests() {
+  await connection(); // getClaims() reads Date.now(); see getCurrentUser
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   const { data, error } = await supabase

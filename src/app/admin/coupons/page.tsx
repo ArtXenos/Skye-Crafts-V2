@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form";
+import { requireAdmin } from "@/lib/auth";
 import { formatPeso } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
 
-export default async function AdminCouponsPage({ searchParams }: PageProps<"/admin/coupons">) {
+async function AdminCoupons({ searchParams }: PageProps<"/admin/coupons">) {
+  await requireAdmin();
   const { saved, deleted } = await searchParams;
   const supabase = await createClient();
   const { data: coupons, error } = await supabase.from("coupons").select("*").order("id", { ascending: false });
@@ -49,5 +52,13 @@ export default async function AdminCouponsPage({ searchParams }: PageProps<"/adm
         </ul>
       )}
     </div>
+  );
+}
+
+export default function AdminCouponsPage(props: PageProps<"/admin/coupons">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminCoupons {...props} />
+    </Suspense>
   );
 }

@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import { RequestUpdateForm } from "@/components/admin/small-forms";
+import { requireAdmin } from "@/lib/auth";
 import { centsToPesoInput } from "@/lib/money";
 import type { RequestStatus } from "@/lib/shop";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 
-export default async function AdminRequestsPage() {
+async function AdminRequests() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: requests, error } = await supabase
     .from("custom_requests")
@@ -40,5 +43,13 @@ export default async function AdminRequestsPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function AdminRequestsPage() {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminRequests />
+    </Suspense>
   );
 }

@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { CouponForm, DeleteCouponButton } from "@/components/admin/coupon-form";
+import { requireAdmin } from "@/lib/auth";
 import { centsToPesoInput } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function EditCouponPage({ params }: PageProps<"/admin/coupons/[id]">) {
+async function EditCoupon({ params }: PageProps<"/admin/coupons/[id]">) {
+  await requireAdmin();
   const { id } = await params;
   if (!/^[1-9][0-9]{0,15}$/.test(id)) notFound();
   const supabase = await createClient();
@@ -27,5 +30,13 @@ export default async function EditCouponPage({ params }: PageProps<"/admin/coupo
       }} />
       <div className="border-t-2 border-line pt-5"><DeleteCouponButton couponId={coupon.id} /></div>
     </div>
+  );
+}
+
+export default function EditCouponPage(props: PageProps<"/admin/coupons/[id]">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <EditCoupon {...props} />
+    </Suspense>
   );
 }

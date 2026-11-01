@@ -1,8 +1,11 @@
+import { Suspense } from "react";
 import { SettingsForm } from "@/components/admin/small-forms";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { settingsSchema, type SettingsInput } from "@/lib/validation";
 
-export default async function AdminSettingsPage() {
+async function AdminSettings() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data, error } = await supabase.from("shop_settings").select("key, value");
   if (error) throw new Error(error.message);
@@ -17,5 +20,13 @@ export default async function AdminSettingsPage() {
       <p className="text-ink-soft">These words appear on the shop&apos;s pages, at checkout and on customers&apos; orders.</p>
       <SettingsForm initial={initial} />
     </div>
+  );
+}
+
+export default function AdminSettingsPage() {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminSettings />
+    </Suspense>
   );
 }

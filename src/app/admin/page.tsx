@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { StatusBadge } from "@/components/shop/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form";
+import { requireAdmin } from "@/lib/auth";
 import { formatPeso } from "@/lib/money";
 import { ORDER_STATUSES, PAYMENT_LABEL, type PaymentMethod } from "@/lib/shop";
 import { createClient } from "@/lib/supabase/server";
@@ -65,7 +67,8 @@ type OrderRow = {
   total_cents: number; created_at: string; has_receipt: boolean; buyer: string; item_count: number;
 };
 
-export default async function AdminOrdersPage({ searchParams }: PageProps<"/admin">) {
+async function AdminOrders({ searchParams }: PageProps<"/admin">) {
+  await requireAdmin();
   const params = await searchParams;
   const status = typeof params.status === "string" && (ORDER_STATUSES as readonly string[]).includes(params.status) ? params.status : "";
   const query = typeof params.q === "string" ? params.q.slice(0, 100) : "";
@@ -195,5 +198,13 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
 
       <ExportOrders />
     </div>
+  );
+}
+
+export default function AdminOrdersPage(props: PageProps<"/admin">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminOrders {...props} />
+    </Suspense>
   );
 }

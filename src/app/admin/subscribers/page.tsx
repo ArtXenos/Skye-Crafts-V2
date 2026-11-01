@@ -1,8 +1,11 @@
+import { Suspense } from "react";
 import { CopyEmailsButton, RemoveButton } from "@/components/admin/small-forms";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 
-export default async function AdminSubscribersPage() {
+async function AdminSubscribers() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: subscribers, error } = await supabase
     .from("newsletter_subscribers")
@@ -30,5 +33,13 @@ export default async function AdminSubscribersPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function AdminSubscribersPage() {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminSubscribers />
+    </Suspense>
   );
 }

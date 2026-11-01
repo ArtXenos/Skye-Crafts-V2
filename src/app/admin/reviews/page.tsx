@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { RemoveButton } from "@/components/admin/small-forms";
 import { Stars } from "@/components/shop/status-badge";
+import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 
-export default async function AdminReviewsPage() {
+async function AdminReviews() {
+  await requireAdmin();
   const supabase = await createClient();
   const { data: reviews, error } = await supabase
     .from("reviews")
@@ -35,5 +38,13 @@ export default async function AdminReviewsPage() {
         </ul>
       )}
     </div>
+  );
+}
+
+export default function AdminReviewsPage() {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminReviews />
+    </Suspense>
   );
 }

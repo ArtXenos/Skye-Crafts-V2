@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,8 +18,14 @@ export type CurrentUser = {
  * getClaims() verifies the login token instead of trusting the cookie as-is.
  * This is for deciding what to *show*; the database checks permissions
  * again on every query, from the same token.
+ *
+ * connection(): with Partial Prefetching, cookies() already resolves while
+ * the App Shell is prerendered, but getClaims() compares the token's expiry
+ * with Date.now(), which Next.js refuses during prerendering. Only this check
+ * waits for the real request; ordinary queries can stay in the App Shell.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  await connection();
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const claims = data?.claims;

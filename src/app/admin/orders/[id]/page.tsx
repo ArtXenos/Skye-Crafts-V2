@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { OrderStatusActions } from "@/components/admin/order-status-actions";
 import { StatusBadge } from "@/components/shop/status-badge";
 import { Notice } from "@/components/ui/form";
+import { requireAdmin } from "@/lib/auth";
 import { formatPeso } from "@/lib/money";
 import { PAYMENT_LABEL, type PaymentMethod } from "@/lib/shop";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 
-export default async function AdminOrderPage({ params }: PageProps<"/admin/orders/[id]">) {
+async function AdminOrder({ params }: PageProps<"/admin/orders/[id]">) {
+  await requireAdmin();
   const { id: rawId } = await params;
   if (!/^[1-9][0-9]{0,15}$/.test(rawId)) notFound();
   const supabase = await createClient();
@@ -110,5 +113,13 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/order
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function AdminOrderPage(props: PageProps<"/admin/orders/[id]">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminOrder {...props} />
+    </Suspense>
   );
 }

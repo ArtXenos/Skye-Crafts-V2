@@ -1,11 +1,14 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ProductArt } from "@/components/shop/art";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/form";
+import { requireAdmin } from "@/lib/auth";
 import { formatPeso } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function AdminProductsPage({ searchParams }: PageProps<"/admin/products">) {
+async function AdminProducts({ searchParams }: PageProps<"/admin/products">) {
+  await requireAdmin();
   const { deleted } = await searchParams;
   const supabase = await createClient();
   const { data: products, error } = await supabase
@@ -43,5 +46,13 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
         ))}
       </ul>
     </div>
+  );
+}
+
+export default function AdminProductsPage(props: PageProps<"/admin/products">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <AdminProducts {...props} />
+    </Suspense>
   );
 }

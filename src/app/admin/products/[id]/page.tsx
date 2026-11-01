@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { DeleteProductButton, ProductForm, ProductPhotoEditor } from "@/components/admin/product-form";
 import { Notice } from "@/components/ui/form";
+import { requireAdmin } from "@/lib/auth";
 import { productImageUrl } from "@/lib/env";
 import { centsToPesoInput } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function EditProductPage({ params, searchParams }: PageProps<"/admin/products/[id]">) {
+async function EditProduct({ params, searchParams }: PageProps<"/admin/products/[id]">) {
+  await requireAdmin();
   const { id } = await params;
   const { created } = await searchParams;
   if (!/^[1-9][0-9]{0,15}$/.test(id)) notFound();
@@ -39,5 +42,13 @@ export default async function EditProductPage({ params, searchParams }: PageProp
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditProductPage(props: PageProps<"/admin/products/[id]">) {
+  return (
+    <Suspense fallback={<p className="text-ink-soft">Loading…</p>}>
+      <EditProduct {...props} />
+    </Suspense>
   );
 }
