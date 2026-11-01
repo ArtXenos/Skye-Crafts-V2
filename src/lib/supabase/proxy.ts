@@ -33,6 +33,15 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Reading the claims is what triggers a refresh of an expired token.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  // Admin pages render alongside the admin layout's gate, so without this a
+  // logged-out visit runs their queries (which the database refuses) before
+  // the gate's redirect. The gate still checks that the user is an admin.
+  if (!data?.claims?.sub && request.nextUrl.pathname.startsWith("/admin")) {
+    const login = new URL("/login", request.url);
+    login.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+    return NextResponse.redirect(login);
+  }
   return response;
 }
