@@ -59,6 +59,7 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // The camera is allowed only on admin pages (product photos), below.
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           ...(isDev ? [] : [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]),
@@ -66,7 +67,11 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/admin/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          // Overrides the rule above: the owner may use the webcam here.
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(), payment=()" },
+        ],
       },
     ];
   },

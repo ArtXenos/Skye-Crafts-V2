@@ -294,3 +294,19 @@ export function fieldErrors(error: z.ZodError) {
   }
   return result;
 }
+
+// Admin CSV export (GET /admin/orders/export) --------------------------------
+
+export const EXPORT_SCOPES = ["sales", "all", ...ORDER_STATUSES] as const;
+
+export const exportSchema = z
+  .object({
+    from: isoDate,
+    to: isoDate,
+    // "sales": every order except declined and cancelled ones.
+    scope: z.enum(EXPORT_SCOPES).default("sales"),
+    // "orders": one row per order. "items": one row per piece sold.
+    kind: z.enum(["orders", "items"]).default("orders"),
+  })
+  .refine((value) => value.from <= value.to, { message: "The start date must be on or before the end date.", path: ["to"] });
+export type ExportInput = z.output<typeof exportSchema>;

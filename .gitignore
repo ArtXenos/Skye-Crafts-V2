@@ -58,3 +58,7 @@ supabase/.branches/
 .venv/
 __pycache__/
 *.pyc
+
+# editor settings and Supabase Studio saved queries (personal, not part of the app)
+.vscode/
+supabase/snippets/

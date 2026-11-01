@@ -87,9 +87,9 @@ const SETTING_FIELDS: { title: string; fields: { key: SettingKey; label: string;
   {
     title: "Shown to everyone",
     fields: [
-      { key: "public_area", label: "Town or area", hint: "Shown instead of the exact pickup place, for example Davao City." },
+      { key: "public_area", label: "Town or area", hint: "Where you deliver and where pickup is, for example Governor Generoso, Davao Oriental. Shown instead of the exact pickup place." },
       { key: "pickup_schedule", label: "Pickup times", long: true },
-      { key: "shipping_note", label: "Shipping", long: true },
+      { key: "shipping_note", label: "Delivery", long: true },
       { key: "lead_time_ready", label: "Lead time for ready pieces" },
       { key: "lead_time_custom", label: "Lead time for custom pieces" },
       { key: "cancellation_note", label: "Cancellation policy", long: true },

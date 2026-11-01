@@ -33,6 +33,7 @@ export default async function AdminProductsPage({ searchParams }: PageProps<"/ad
                   {product.category}, {formatPeso(product.price_cents)}
                   {product.is_active ? "" : ", hidden from the shop"}
                 </p>
+                {!product.image_path && <p className="text-sm font-semibold text-bloom-deep">Needs a real photo</p>}
               </div>
               <p className={product.is_preorder ? "text-wire" : product.stock <= 3 ? "font-semibold text-bloom-deep" : ""}>
                 {product.is_preorder ? "Made to order" : `${product.stock} in stock`}

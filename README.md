@@ -1,7 +1,7 @@
 # Skye Crafts
 
 An online shop for handmade fuzzy-wire bouquets, keychains, pots and figurines.
-Customers browse, order for delivery (J&T Express) or pickup, pay by GCash or
+Customers browse, order for local delivery (within Governor Generoso, Davao Oriental) or pickup, pay by GCash or
 cash on pickup, and follow their orders. The owner runs everything from
 `/admin`.
 
@@ -35,7 +35,9 @@ Read it before changing anything security-related.
 **The owner (`/admin`)**
 - Dashboard: orders waiting, receipts to check, 30-day sales, low stock, new requests.
 - Orders: filter, search, paging; confirm, pack, ship, deliver, decline or cancel, with a note the customer sees.
-- Products with photos, coupons, custom requests (with quotes), reviews, subscribers, and shop settings (GCash details, pickup place, policies).
+- Products, each with a real photo: take it with the phone camera (or laptop webcam) or choose a saved one. Photos are shrunk on the device and their location data removed before upload.
+- Download orders for Excel or Google Sheets (CSV): one row per order, or one row per piece sold, for any date range.
+- Coupons, custom requests (with quotes), reviews, subscribers, and shop settings (GCash details, pickup place and map pin, delivery area, policies).
 
 **Automatic**
 - Stock goes down at checkout and back up on decline, cancel or expiry.

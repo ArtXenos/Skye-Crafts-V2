@@ -177,6 +177,19 @@ shell. React escapes everything it renders, and no page uses
 here. The end-to-end tests check that a note containing `<b>` shows up as
 text.
 
+**Camera.** `Permissions-Policy` turns the camera off everywhere except
+`/admin`, where the owner can take product photos with a laptop webcam. On
+phones, "Take a photo" opens the phone's own camera app instead (`<input
+capture>`), which needs no permission. Every product photo is redrawn in the
+browser (`src/lib/photo.ts`): at most 1600 px, saved as JPEG, which keeps it
+under the 4 MB upload limit and removes EXIF data such as GPS location.
+
+**CSV export.** `/admin/orders/export` is a Route Handler, so it checks for the
+owner itself (layouts don't protect Route Handlers). Cells that start with
+`=`, `+`, `-` or `@` get a leading apostrophe (`src/lib/csv.ts`): a customer
+could otherwise type a "name" that Excel runs as a formula when the owner opens
+the file ("CSV injection").
+
 The CSP also allows images from `https://tile.openstreetmap.org`, for the
 pickup map. The map is drawn with Leaflet in the browser
 (`src/components/map/`), needs no API key, and gets its location the same way
@@ -191,7 +204,7 @@ Stadia, Mapbox) and add that host to the CSP.
 
 - **Online payment.** GCash is checked by the owner by eye; there's no payment
   gateway, so no card data ever touches the app.
-- **Shipping fee calculation.** J&T fees are confirmed by message, as before.
+- **Delivery fee calculation.** Delivery is local (Governor Generoso, Davao Oriental) and the fee is confirmed by message. J&T Express could be added later.
 - **Categories** are a fixed list (constraint + `src/lib/shop.ts`). Adding one
   means changing both, on purpose: it's rare and it affects the art and filters.
 - **Deleting accounts.** Orders keep `buyer_id` (`on delete restrict`) so sales

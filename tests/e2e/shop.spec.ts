@@ -200,12 +200,28 @@ test("the owner adds a product with a photo and it appears in the shop", async (
   await page.getByLabel("Description").filter({ visible: true }).fill("A single sunflower on a long stem.");
   await page.getByLabel("Price (₱)").filter({ visible: true }).fill("199.50");
   await page.getByLabel("In stock").filter({ visible: true }).fill("4");
-  await page.getByRole("button", { name: "Add product" }).click();
-  await expect(page.getByText("Product added. Now add a photo.").filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Take a photo" })).toBeVisible();
+  await expectAccessible(page);
 
-  await page.getByLabel("Add a photo").filter({ visible: true }).setInputFiles({ name: "flower.png", mimeType: "image/png", buffer: PNG });
-  await page.getByRole("button", { name: "Upload photo" }).click();
-  await expect(page.getByText("Photo updated.").filter({ visible: true })).toBeVisible();
+  // A photo is required.
+  await page.getByRole("button", { name: "Add product" }).click();
+  await expect(page.getByText("Add a photo of the piece.").first()).toBeVisible();
+
+  // Choose a saved photo (the hidden file input behind "Choose a saved photo").
+  await page.getByRole("group", { name: "Photo", exact: true }).filter({ visible: true }).getByLabel("Photo: saved photo").setInputFiles({ name: "flower.png", mimeType: "image/png", buffer: PNG });
+  await expect(page.getByRole("img", { name: "The new photo" })).toBeVisible();
+  await page.getByRole("button", { name: "Add product" }).click();
+  await expect(page.getByText("Product added with its photo.").filter({ visible: true })).toBeVisible();
+  // The browser redrew it as a JPEG before uploading.
+  const [saved] = await sql("select image_path from public.products where title = $1", [title]);
+  expect(saved.image_path).toMatch(/\.jpg$/);
+
+  // Replace it from the edit page.
+  await page.getByRole("group", { name: "Photo", exact: true }).filter({ visible: true }).getByLabel("Photo: saved photo").setInputFiles({ name: "flower2.png", mimeType: "image/png", buffer: PNG });
+  await page.getByRole("button", { name: "Save this photo" }).click();
+  await expect(page.getByText("Photo updated.").first()).toBeVisible();
+  const [replaced] = await sql("select image_path from public.products where title = $1", [title]);
+  expect(replaced.image_path).not.toBe(saved.image_path);
 
   await page.goto("/products");
   await expect(page.getByRole("link", { name: title })).toBeVisible();
@@ -213,6 +229,34 @@ test("the owner adds a product with a photo and it appears in the shop", async (
   await page.getByRole("link", { name: title }).click();
   await expect(page.getByText("₱199.50").filter({ visible: true })).toBeVisible();
 });
+
+test("the owner downloads orders as a CSV file, and customers can't", async ({ page }) => {
+  await logIn(page, owner, "/admin");
+  await expect(page.getByRole("heading", { name: "Download for Excel or Google Sheets" })).toBeVisible();
+  await page.getByLabel("Which orders").selectOption("all");
+
+  const [orders] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "One row per order" }).click()]);
+  expect(orders.suggestedFilename()).toMatch(/^skye-crafts-orders-\d{4}-\d{2}-01-to-\d{4}-\d{2}-\d{2}\.csv$/);
+  const csv = await streamText(await orders.createReadStream());
+  expect(csv.startsWith("\uFEFFOrder,Date (Manila),Status,Customer")).toBe(true);
+  expect(csv).toContain(`#${pickupOrderUrl.split("/").pop()}`.slice(1));
+  expect(csv).toContain("Pink ribbon please <b>thanks</b>");
+
+  const [items] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: "One row per piece sold" }).click()]);
+  const itemsCsv = await streamText(await items.createReadStream());
+  expect(itemsCsv).toContain("Product,Made to order,Quantity");
+
+  await logOut(page);
+  await logIn(page, buyer, "/account");
+  const refused = await page.request.get("/admin/orders/export?from=2026-01-01&to=2026-12-31");
+  expect(refused.status()).toBe(403);
+});
+
+async function streamText(stream: NodeJS.ReadableStream) {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+  return Buffer.concat(chunks).toString("utf8");
+}
 
 test("a coupon applies at checkout and the total is charged correctly", async ({ page }) => {
   await sql(`insert into public.coupons (code, discount_type, discount_value, starts_on, ends_on, once_per_customer)

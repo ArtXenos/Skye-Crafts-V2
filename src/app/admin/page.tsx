@@ -7,6 +7,48 @@ import { ORDER_STATUSES, PAYMENT_LABEL, type PaymentMethod } from "@/lib/shop";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils";
 
+/** Today's date in Manila as YYYY-MM-DD. */
+function manilaToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(new Date());
+}
+
+/**
+ * Download orders as a spreadsheet. A plain GET form: the browser asks
+ * /admin/orders/export for the file, which checks the owner and the dates.
+ */
+function ExportOrders() {
+  const today = manilaToday();
+  const monthStart = `${today.slice(0, 8)}01`;
+  return (
+    <section aria-labelledby="export-heading" className="grid gap-4 rounded-2xl bg-paper p-5 ring-2 ring-line">
+      <div className="grid gap-1">
+        <h2 id="export-heading" className="text-2xl">Download for Excel or Google Sheets</h2>
+        <p className="text-sm text-ink-soft">A CSV file of the orders placed between these dates (Manila time).</p>
+      </div>
+      <form action="/admin/orders/export" method="get" className="flex flex-wrap items-end gap-3">
+        <label className="grid gap-1 text-sm font-semibold">
+          From
+          <Input type="date" name="from" defaultValue={monthStart} max={today} required className="w-44" />
+        </label>
+        <label className="grid gap-1 text-sm font-semibold">
+          To
+          <Input type="date" name="to" defaultValue={today} max={today} required className="w-44" />
+        </label>
+        <label className="grid gap-1 text-sm font-semibold">
+          Which orders
+          <Select name="scope" defaultValue="sales" className="w-60">
+            <option value="sales">Sales (not declined or cancelled)</option>
+            <option value="all">All orders</option>
+            {ORDER_STATUSES.map((value) => <option key={value} value={value}>Only {value}</option>)}
+          </Select>
+        </label>
+        <Button type="submit" name="kind" value="orders">One row per order</Button>
+        <Button type="submit" name="kind" value="items" variant="secondary">One row per piece sold</Button>
+      </form>
+    </section>
+  );
+}
+
 const PAGE_SIZE = 20;
 
 type Summary = {
@@ -126,7 +168,7 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
                       <p className="text-sm text-ink-soft">{order.contact}, account {order.buyer}</p>
                     </td>
                     <td className="px-4 py-3">
-                      {order.fulfillment === "pickup" ? "Pickup" : "J&T delivery"}, {PAYMENT_LABEL[order.payment_method as PaymentMethod]}
+                      {order.fulfillment === "pickup" ? "Pickup" : "Delivery"}, {PAYMENT_LABEL[order.payment_method as PaymentMethod]}
                       {order.status === "Placed" && order.payment_method === "gcash" && (
                         <p className={order.has_receipt ? "text-sm font-semibold text-leaf" : "text-sm text-ink-soft"}>
                           {order.has_receipt ? "Receipt uploaded" : "No receipt yet"}
@@ -150,6 +192,8 @@ export default async function AdminOrdersPage({ searchParams }: PageProps<"/admi
           </nav>
         )}
       </section>
+
+      <ExportOrders />
     </div>
   );
 }

@@ -1,34 +1,52 @@
 "use client";
 
-import { useActionState, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { deleteProduct, removeProductImage, saveProduct, uploadProductImage } from "@/app/actions/admin";
-import { guardPhotoSize } from "@/components/file-size-guard";
+import { createProduct, deleteProduct, removeProductImage, saveProduct, uploadProductImage } from "@/app/actions/admin";
+import { PhotoPicker } from "@/components/admin/photo-picker";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Notice, Select, Textarea } from "@/components/ui/form";
 import { formResolver } from "@/components/form-resolver";
 import { useActionForm } from "@/components/use-action-form";
-import type { ActionResult } from "@/lib/action-result";
+import { failure } from "@/lib/action-result";
 import { CATEGORIES } from "@/lib/shop";
 import { productSchema, type ProductInput } from "@/lib/validation";
 
 export function ProductForm({ productId, initial, loadedAt }: { productId: number | null; initial: ProductInput; loadedAt?: string }) {
   const form = useForm<ProductInput>({ resolver: formResolver(productSchema), defaultValues: initial });
-  // Stock changes by itself as orders come in, so it is only saved when the
-  // owner actually edited it (and then only if nothing changed meanwhile).
-  const { submit, pending, message } = useActionForm(
-    form,
-    (values: ProductInput) => saveProduct(productId, values, { stockChanged: Boolean(form.formState.dirtyFields.stock), loadedAt }),
-    { successToast: true },
-  );
+  const isNew = !productId;
+  // A new product is added together with its photo.
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoError, setPhotoError] = useState("");
+
+  async function save(values: ProductInput) {
+    if (!productId) {
+      if (!photo) {
+        setPhotoError("Add a photo of the piece.");
+        return failure("Add a photo of the piece.");
+      }
+      const data = new FormData();
+      data.set("image", photo);
+      const result = await createProduct(values, data);
+      if (result && !result.ok) setPhotoError(result.fieldErrors?.image?.[0] ?? "");
+      return result;
+    }
+    // Stock changes by itself as orders come in, so it is only saved when the
+    // owner actually edited it (and then only if nothing changed meanwhile).
+    return saveProduct(productId, values, { stockChanged: Boolean(form.formState.dirtyFields.stock), loadedAt });
+  }
+  const { submit, pending, message } = useActionForm(form, save, { successToast: true });
   const errors = form.formState.errors;
   const preorder = useWatch({ control: form.control, name: "is_preorder" });
 
   // Next.js keeps recently visited pages alive but hidden. When the "add a
   // product" page is left, clear it so the next visit starts empty.
-  const isNew = !productId;
-  const resetRef = useRef(() => form.reset(initial));
+  const resetRef = useRef(() => {
+    form.reset(initial);
+    setPhoto(null);
+    setPhotoError("");
+  });
   useLayoutEffect(() => () => {
     if (isNew) resetRef.current();
   }, [isNew]);
@@ -60,7 +78,11 @@ export function ProductForm({ productId, initial, loadedAt }: { productId: numbe
         <Checkbox label="Made to order (pre-order): no stock limit" {...form.register("is_preorder")} />
         <Checkbox label="Show in the shop" {...form.register("is_active")} />
       </div>
-      {message?.tone === "error" && <Notice tone="error">{message.text}</Notice>}
+      {isNew && (
+        <PhotoPicker label="Photo" value={photo} error={photoError}
+          onChange={(file) => { setPhoto(file); setPhotoError(""); }} />
+      )}
+      {message?.tone === "error" && message.text !== photoError && <Notice tone="error">{message.text}</Notice>}
       <div>
         <Button type="submit" disabled={pending}>{pending ? "Saving…" : productId ? "Save changes" : "Add product"}</Button>
       </div>
@@ -68,34 +90,45 @@ export function ProductForm({ productId, initial, loadedAt }: { productId: numbe
   );
 }
 
-export function ProductImageForm({ productId, hasImage }: { productId: number; hasImage: boolean }) {
-  const [result, action, pending] = useActionState<ActionResult | null, FormData>(uploadProductImage, null);
-  const [removing, startRemove] = useTransition();
-  const inputId = useId();
-  const [tooBig, setTooBig] = useState("");
+/** Change or remove the photo of a product that already exists. */
+export function ProductPhotoEditor({ productId, currentUrl }: { productId: number; currentUrl: string | null }) {
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  function upload() {
+    if (!photo) return;
+    startTransition(async () => {
+      const data = new FormData();
+      data.set("productId", String(productId));
+      data.set("image", photo);
+      const result = await uploadProductImage(null, data);
+      if (result.ok) {
+        toast.success(result.message ?? "Photo updated.");
+        setPhoto(null);
+      } else {
+        setError(result.message);
+      }
+    });
+  }
+
   return (
     <div className="grid gap-3">
-      <form action={action} onSubmit={(event) => guardPhotoSize(event, setTooBig)} className="grid gap-3">
-        <input type="hidden" name="productId" value={productId} />
-        <label htmlFor={inputId} className="font-semibold">{hasImage ? "Replace the photo" : "Add a photo"}</label>
-        <input id={inputId} name="image" type="file" accept="image/jpeg,image/png,image/webp" required
-          className="block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:font-semibold file:text-paper" />
-        <p className="text-sm text-ink-soft">Square photos look best. JPG, PNG or WebP, up to 4 MB.</p>
-        {tooBig ? <Notice tone="error">{tooBig}</Notice> : result && <Notice tone={result.ok ? "success" : "error"}>{result.message}</Notice>}
-        <div className="flex flex-wrap gap-2">
-          <Button type="submit" variant="secondary" disabled={pending}>{pending ? "Uploading…" : "Upload photo"}</Button>
-          {hasImage && (
-            <Button variant="ghost" disabled={removing}
-              onClick={() => startRemove(async () => {
-                const removed = await removeProductImage(productId);
-                if (removed.ok) toast.success(removed.message ?? "Photo removed.");
-                else toast.error(removed.message);
-              })}>
-              Remove photo
-            </Button>
-          )}
-        </div>
-      </form>
+      <PhotoPicker label={currentUrl ? "Photo" : "Add a photo"} value={photo} currentUrl={currentUrl} error={error}
+        onChange={(file) => { setPhoto(file); setError(""); }} />
+      <div className="flex flex-wrap gap-2">
+        {photo && <Button type="button" disabled={pending} onClick={upload}>{pending ? "Saving photo…" : "Save this photo"}</Button>}
+        {currentUrl && !photo && (
+          <Button type="button" variant="ghost" size="sm" disabled={pending}
+            onClick={() => startTransition(async () => {
+              const removed = await removeProductImage(productId);
+              if (removed.ok) toast.success(removed.message ?? "Photo removed.");
+              else toast.error(removed.message);
+            })}>
+            Remove photo
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

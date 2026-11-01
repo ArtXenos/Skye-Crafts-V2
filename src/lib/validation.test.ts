@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkoutSchema, couponSchema, productSchema, registerSchema, settingsSchema } from "./validation";
+import { checkoutSchema, couponSchema, exportSchema, productSchema, registerSchema, settingsSchema } from "./validation";
 
 const checkout = {
   recipient: "Maria Santos",
@@ -96,5 +96,20 @@ describe("settingsSchema", () => {
     expect(pin("https://www.google.com/maps/@7.0731,125.6128,17z").data?.pickup_coordinates).toBe("7.073100,125.612800");
     expect(pin("125.6128, 7.0731").success).toBe(false);
     expect(pin("Davao City").success).toBe(false);
+  });
+});
+
+describe("exportSchema", () => {
+  it("defaults to sales, one row per order", () => {
+    expect(exportSchema.parse({ from: "2026-10-01", to: "2026-10-31" })).toEqual({ from: "2026-10-01", to: "2026-10-31", scope: "sales", kind: "orders" });
+  });
+  it.each([
+    [{ from: "2026-10-31", to: "2026-10-01" }],
+    [{ from: "2026-02-30", to: "2026-03-01" }],
+    [{ from: "yesterday", to: "2026-03-01" }],
+    [{ from: "2026-10-01", to: "2026-10-31", scope: "everything" }],
+    [{ from: "2026-10-01", to: "2026-10-31", kind: "pdf" }],
+  ])("rejects %o", (input) => {
+    expect(exportSchema.safeParse(input).success).toBe(false);
   });
 });

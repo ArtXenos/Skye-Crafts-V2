@@ -88,7 +88,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[id]"
             </div>
             <div>
               <dt className="font-semibold">Getting it to you</dt>
-              <dd className="text-ink-soft">Pickup in {settings.public_area}, or J&amp;T Express delivery. {settings.shipping_note}</dd>
+              <dd className="text-ink-soft">Pickup or delivery within {settings.public_area}. {settings.shipping_note}</dd>
             </div>
           </dl>
         </div>

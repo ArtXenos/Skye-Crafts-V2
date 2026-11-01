@@ -32,7 +32,7 @@ export function customerStatusLabel(status: string, fulfillment: string) {
     case "Placed": return "Waiting for the shop to confirm";
     case "Approved": return "Confirmed, being made";
     case "Packed": return "Packed";
-    case "Shipped": return pickup ? "Ready for pickup" : "Shipped via J&T Express";
+    case "Shipped": return pickup ? "Ready for pickup" : "Out for delivery";
     case "Delivered": return pickup ? "Picked up" : "Delivered";
     case "Declined": return "Declined by the shop";
     case "Cancelled": return "Cancelled";
@@ -51,7 +51,7 @@ export const ADMIN_NEXT_STEPS: Record<string, { status: OrderStatus; label: stri
     { status: "Cancelled", label: "Cancel", needsNote: true },
   ],
   Packed: [
-    { status: "Shipped", label: "Mark shipped / ready" },
+    { status: "Shipped", label: "Out for delivery / ready for pickup" },
     { status: "Cancelled", label: "Cancel", needsNote: true },
   ],
   Shipped: [{ status: "Delivered", label: "Mark delivered" }],

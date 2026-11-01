@@ -127,7 +127,7 @@ export function CheckoutForm({ products, settings, email }: { products: Product[
         <fieldset className="grid gap-3">
           <legend className="mb-3 font-display text-2xl">How will you get it?</legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Choice value="delivery" title="Delivery" detail="Shipped through J&T Express. You pay the shipping fee."
+            <Choice value="delivery" title="Delivery" detail={`Within ${settings.public_area} only. The delivery fee is confirmed by message.`}
               checked={fulfillment === "delivery"} {...form.register("fulfillment")} />
             <Choice value="pickup" title="Pickup" detail={`In ${settings.public_area}. The exact place is shown once the shop confirms your order.`}
               checked={fulfillment === "pickup"} {...form.register("fulfillment")} />

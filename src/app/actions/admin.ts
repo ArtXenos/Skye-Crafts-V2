@@ -12,7 +12,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { TAGS } from "@/lib/data/catalog";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { createClient } from "@/lib/supabase/server";
-import { checkImage } from "@/lib/uploads";
+import { checkImage, type CheckedImage } from "@/lib/uploads";
 import { couponSchema, orderStatusSchema, productSchema, requestUpdateSchema, settingsSchema, type SettingKey } from "@/lib/validation";
 
 async function adminClient() {
@@ -52,6 +52,62 @@ export async function setOrderStatus(input: unknown): Promise<ActionResult> {
 
 // products ------------------------------------------------------------------
 
+type Supabase = Awaited<ReturnType<typeof createClient>>;
+
+/** Put a checked photo in storage and point the product at it. Returns an error message, or null. */
+async function storeProductPhoto(supabase: Supabase, productId: number, image: CheckedImage) {
+  const path = `${productId}/${randomUUID().slice(0, 12)}.${image.ext}`;
+  const { error: uploadError } = await supabase.storage
+    .from("product-images")
+    .upload(path, image.bytes, { contentType: image.type, cacheControl: "31536000", upsert: false });
+  if (uploadError) {
+    console.error("[product photo]", uploadError);
+    return "The photo couldn't be uploaded. Please try again.";
+  }
+  const { error } = await supabase.from("products").update({ image_path: path }).eq("id", productId);
+  if (error) {
+    console.error("[product photo]", error);
+    await supabase.storage.from("product-images").remove([path]);
+    return "The photo couldn't be saved. Please try again.";
+  }
+  return null;
+}
+
+/**
+ * Add a product together with its photo. Every product needs a real photo,
+ * so if the photo can't be stored, the new product is removed again rather
+ * than left in the shop without one.
+ */
+export async function createProduct(input: unknown, photo: FormData): Promise<ActionResult> {
+  const parsed = productSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const supabase = await adminClient();
+  if (!supabase) return NOT_ADMIN;
+
+  const image = await checkImage(photo instanceof FormData ? photo.get("image") : null);
+  if (typeof image === "string") {
+    const message = image === "Choose a photo to upload." ? "Add a photo of the piece." : image;
+    return failure(message, { fieldErrors: { image: [message] } });
+  }
+
+  const { price, stock, ...rest } = parsed.data;
+  const { data, error } = await supabase
+    .from("products")
+    .insert({ ...rest, stock, price_cents: price })
+    .select("id")
+    .single();
+  if (error) return fromDatabaseError(error, "createProduct");
+
+  const problem = await storeProductPhoto(supabase, data.id, image);
+  if (problem) {
+    await supabase.from("products").delete().eq("id", data.id);
+    return failure(problem, { fieldErrors: { image: [problem] } });
+  }
+
+  updateTag(TAGS.products);
+  redirect(`/admin/products/${data.id}?created=1`);
+}
+
 export async function saveProduct(
   productId: unknown,
   input: unknown,
@@ -64,17 +120,7 @@ export async function saveProduct(
 
   const { price, stock, ...rest } = parsed.data;
   const id = positiveId(productId);
-
-  if (!id) {
-    const { data, error } = await supabase
-      .from("products")
-      .insert({ ...rest, stock, price_cents: price })
-      .select("id")
-      .single();
-    if (error) return fromDatabaseError(error, "saveProduct");
-    updateTag(TAGS.products);
-    redirect(`/admin/products/${data.id}?created=1`);
-  }
+  if (!id) return failure("Product not found.");
 
   // Orders change stock all the time. Saving a stale number would undo
   // sales, so stock is written only when the owner edited it, and only if
@@ -115,17 +161,8 @@ export async function uploadProductImage(_previous: ActionResult | null, formDat
   const { data: product } = await supabase.from("products").select("image_path").eq("id", productId).maybeSingle();
   if (!product) return failure("Product not found.");
 
-  const path = `${productId}/${randomUUID().slice(0, 12)}.${image.ext}`;
-  const { error: uploadError } = await supabase.storage
-    .from("product-images")
-    .upload(path, image.bytes, { contentType: image.type, cacheControl: "31536000", upsert: false });
-  if (uploadError) {
-    console.error("[uploadProductImage]", uploadError);
-    return failure("The photo couldn't be uploaded. Please try again.");
-  }
-
-  const { error } = await supabase.from("products").update({ image_path: path }).eq("id", productId);
-  if (error) return fromDatabaseError(error, "uploadProductImage");
+  const problem = await storeProductPhoto(supabase, productId, image);
+  if (problem) return failure(problem);
   if (product.image_path) await supabase.storage.from("product-images").remove([product.image_path]);
 
   updateTag(TAGS.products);

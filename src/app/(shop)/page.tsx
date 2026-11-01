@@ -11,7 +11,7 @@ const STEPS = [
   { title: "Tell us the idea", text: "Colours, size, occasion, and a reference photo if you have one." },
   { title: "Get a quote", text: "The shop replies with a price and how long it will take." },
   { title: "We shape it by hand", text: "Every stem and petal is bent, twisted and wrapped one at a time." },
-  { title: "Pick up or ship", text: "Collect it in person or have it sent through J&T Express." },
+  { title: "Pick up or get it delivered", text: "Collect it in person, or have it brought to your door nearby." },
 ];
 
 export default async function HomePage() {

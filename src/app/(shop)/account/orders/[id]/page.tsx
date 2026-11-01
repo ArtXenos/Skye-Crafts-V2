@@ -102,7 +102,7 @@ async function OrderDetail({ params, searchParams }: PageProps<"/account/orders/
             {order.discount_cents > 0 && <div className="flex justify-between text-leaf"><dt>Coupon {order.coupon_code}</dt><dd>−{formatPeso(order.discount_cents)}</dd></div>}
             <div className="flex justify-between text-xl font-bold"><dt>Total</dt><dd>{formatPeso(order.total_cents)}</dd></div>
           </dl>
-          {!pickup && <p className="text-sm text-ink-soft">The J&amp;T Express shipping fee is confirmed by message.</p>}
+          {!pickup && <p className="text-sm text-ink-soft">The delivery fee is confirmed by message.</p>}
         </section>
 
         <section aria-labelledby="details-heading" className="grid content-start gap-4">

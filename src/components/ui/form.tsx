@@ -70,10 +70,11 @@ export function Checkbox({ label, className, ...props }: ComponentProps<"input">
 }
 
 /** A message box for the result of a form (error or success). */
-export function Notice({ tone = "info", children, className }: { tone?: "info" | "error" | "success"; children: ReactNode; className?: string }) {
+export function Notice({ tone = "info", children, className, id }: { tone?: "info" | "error" | "success"; children: ReactNode; className?: string; id?: string }) {
   if (!children) return null;
   return (
     <div
+      id={id}
       role={tone === "error" ? "alert" : "status"}
       className={cn(
         "rounded-[var(--radius-field)] px-4 py-3 text-[0.95rem]",
