@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createPlainClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { assertSupabaseConfigured, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from "@/lib/env";
 import type { Database } from "./database.types";
 
@@ -10,9 +11,15 @@ import type { Database } from "./database.types";
  * Supabase as the person making this request (their login cookie). Row
  * Level Security in the database decides what they can see and change.
  * Create a new one per request; never share it.
+ *
+ * connection(): with Partial Prefetching, cookies() already resolves while
+ * the App Shell is prerendered, but Supabase compares the token's expiry
+ * with Date.now(), which Next.js refuses during prerendering. Waiting for
+ * the real request keeps every per-visitor query out of prerendering.
  */
 export async function createClient() {
   assertSupabaseConfigured();
+  await connection();
   const cookieStore = await cookies();
   return createServerClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
