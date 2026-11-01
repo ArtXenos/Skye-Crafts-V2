@@ -53,10 +53,10 @@ export function ProductForm({ productId, initial, loadedAt }: { productId: numbe
 
   return (
     <form onSubmit={submit} noValidate className="grid gap-5">
-      <Field label="Name" error={errors.title?.message}>
+      <Field label="Name" hint="The name of this variety, as customers will see it." error={errors.title?.message}>
         {(p) => <Input {...p} {...form.register("title")} />}
       </Field>
-      <Field label="Description" error={errors.description?.message}>
+      <Field label="Description" hint="What makes this variety different: colours, flowers, size, wrapping." error={errors.description?.message}>
         {(p) => <Textarea rows={4} {...p} {...form.register("description")} />}
       </Field>
       <div className="grid gap-5 sm:grid-cols-3">

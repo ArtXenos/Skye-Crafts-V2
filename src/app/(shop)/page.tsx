@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { WireDivider } from "@/components/shop/art";
+import { ProductArt, WireDivider } from "@/components/shop/art";
 import { HeroBouquet } from "@/components/shop/hero-bouquet";
 import { Policies } from "@/components/shop/policies";
 import { ProductCard } from "@/components/shop/product-card";
 import { CustomRequestForm } from "@/components/shop/public-forms";
 import { Button } from "@/components/ui/button";
 import { getProducts, getPublicSettings, getRatings } from "@/lib/data/catalog";
+import { CATEGORIES, categorySlug } from "@/lib/shop";
 
 const STEPS = [
   { title: "Tell us the idea", text: "Colours, size, occasion, and a reference photo if you have one." },
@@ -17,6 +18,12 @@ const STEPS = [
 export default async function HomePage() {
   const [products, ratings, settings] = await Promise.all([getProducts(), getRatings(), getPublicSettings()]);
   const featured = products.slice(0, 4);
+  // One tile per category that has something in it, showing a real photo
+  // from that category when there is one.
+  const categories = CATEGORIES.map((name) => {
+    const inCategory = products.filter((product) => product.category === name);
+    return { name, count: inCategory.length, cover: inCategory.find((product) => product.image_path) ?? inCategory[0] };
+  }).filter((category) => category.count > 0);
 
   return (
     <>
@@ -24,7 +31,7 @@ export default async function HomePage() {
         <div className="grid gap-6">
           <h1 className="text-[2.6rem] sm:text-6xl">Flowers that stay in bloom, twisted by hand from fuzzy wire.</h1>
           <p className="max-w-[34rem] text-lg text-ink-soft">
-            Bouquets, keychains, little pots and figurines made to order in {settings.public_area || "the Philippines"}, for
+            Bouquets, keychains, little pots, figurines and accessories made to order in {settings.public_area || "the Philippines"}, for
             graduations, birthdays, monthsaries and everything in between.
           </p>
           <div className="flex flex-wrap gap-3">
@@ -36,6 +43,26 @@ export default async function HomePage() {
           <HeroBouquet />
         </div>
       </section>
+
+      {categories.length > 0 && (
+        <section aria-labelledby="categories-heading" className="mx-auto mb-16 max-w-6xl px-4 sm:px-6">
+          <h2 id="categories-heading" className="mb-8 text-3xl sm:text-4xl">Shop by category</h2>
+          <ul className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+            {categories.map((category) => (
+              <li key={category.name}>
+                <Link href={`/products#${categorySlug(category.name)}`} className="group grid gap-3">
+                  <ProductArt title={category.name} category={category.name} imagePath={category.cover?.image_path ?? null}
+                    sizes="(min-width: 1024px) 20vw, (min-width: 640px) 30vw, 45vw" className="transition-transform group-hover:-translate-y-1" />
+                  <span>
+                    <span className="block font-semibold group-hover:underline">{category.name}</span>
+                    <span className="text-sm text-ink-soft">{category.count} {category.count === 1 ? "variety" : "varieties"}</span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section aria-labelledby="featured" className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">

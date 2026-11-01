@@ -10,6 +10,7 @@ import { Stars } from "@/components/shop/status-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getProduct, getProducts, getPublicSettings, getReviews } from "@/lib/data/catalog";
 import { formatPeso } from "@/lib/money";
+import { categorySlug } from "@/lib/shop";
 import { createClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
 
@@ -62,7 +63,9 @@ export default async function ProductPage({ params }: PageProps<"/products/[id]"
       <nav aria-label="Breadcrumb" className="mb-6 text-sm text-ink-soft">
         <Link href="/products" className="underline decoration-line underline-offset-4 hover:decoration-ink">The collection</Link>
         <span aria-hidden="true"> / </span>
-        <span>{product.category}</span>
+        <Link href={`/products#${categorySlug(product.category)}`} className="underline decoration-line underline-offset-4 hover:decoration-ink">
+          {product.category}
+        </Link>
       </nav>
 
       <div className="grid gap-10 md:grid-cols-2">

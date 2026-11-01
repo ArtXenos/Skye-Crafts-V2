@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils";
 // its own soft tint. Plum strokes with round caps read as bent chenille stems.
 
 const TINTS: Record<string, string> = {
-  Bouquets: "bg-petal",
+  "Flower Bouquets": "bg-petal",
   Keychains: "bg-[#f6ecd6]",
-  Pots: "bg-leaf-soft",
-  Figurines: "bg-[#efe3f1]",
+  "Fuzzy Wire Pots": "bg-leaf-soft",
+  "Desk Figurines": "bg-[#efe3f1]",
+  Accessories: "bg-[#e6eef6]",
 };
 
 function Glyph({ category }: { category: string }) {
@@ -24,7 +25,7 @@ function Glyph({ category }: { category: string }) {
           <circle cx="100" cy="140" r="9" fill="#f6d9e0" />
         </g>
       );
-    case "Pots":
+    case "Fuzzy Wire Pots":
       return (
         <g>
           <path d="M100 118 C 96 96, 112 84, 100 64 C 90 48, 108 40, 100 30" {...stroke} stroke="var(--color-leaf)" />
@@ -32,7 +33,20 @@ function Glyph({ category }: { category: string }) {
           <path d="M66 118 H134 L124 166 H76 Z" {...stroke} fill="#f6d9e0" />
         </g>
       );
-    case "Figurines":
+    case "Accessories":
+      // A beaded bracelet with a flower charm.
+      return (
+        <g>
+          <ellipse cx="100" cy="100" rx="52" ry="40" {...stroke} stroke="var(--color-wire)" />
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+            <circle key={i} cx={100 + 52 * Math.cos((i * Math.PI) / 5)} cy={100 + 40 * Math.sin((i * Math.PI) / 5)} r="7"
+              fill={i % 2 ? "var(--color-bloom)" : "#f6d9e0"} />
+          ))}
+          <circle cx="100" cy="152" r="14" fill="var(--color-bloom-deep)" />
+          <circle cx="100" cy="152" r="5" fill="#f6d9e0" />
+        </g>
+      );
+    case "Desk Figurines":
       return (
         <g>
           <circle cx="100" cy="72" r="26" {...stroke} fill="#f6d9e0" />

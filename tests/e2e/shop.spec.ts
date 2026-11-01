@@ -21,7 +21,14 @@ test("a guest can browse, filter and fill a cart", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toContainText("twisted by hand");
   await expectAccessible(page);
 
-  await page.getByRole("link", { name: "Shop the collection" }).click();
+  // Categories on the home page jump to their section of the collection.
+  await page.getByRole("link", { name: /^Fuzzy Wire Pots/ }).click();
+  await expect(page).toHaveURL(/\/products#fuzzy-wire-pots$/);
+  await expect(page.getByRole("heading", { level: 2, name: /^Fuzzy Wire Pots/ })).toBeInViewport();
+  for (const category of ["Flower Bouquets", "Keychains", "Fuzzy Wire Pots", "Desk Figurines"]) {
+    await expect(page.getByRole("region", { name: new RegExp(`^${category}`) })).toBeVisible();
+  }
+
   await page.getByRole("button", { name: "Keychains" }).click();
   await expect(page.getByRole("link", { name: "Mirror Keychain" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Fuzzy Wire Pot" })).toBeHidden();
@@ -194,7 +201,12 @@ test("a guest custom request reaches the owner, who can quote it", async ({ page
 });
 
 test("the owner adds a product with a photo and it appears in the shop", async ({ page }) => {
-  await logIn(page, owner, "/admin/products/new");
+  // Each category lists its varieties, with its own "Add a variety" button.
+  await logIn(page, owner, "/admin/products");
+  await expect(page.getByRole("region", { name: /^Accessories/ }).getByText("No accessories yet.")).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole("link", { name: "Add a variety to Fuzzy Wire Pots" }).click();
+  await expect(page.getByLabel("Category").filter({ visible: true })).toHaveValue("Fuzzy Wire Pots");
   const title = `Sunflower ${run}`;
   await page.getByLabel("Name").filter({ visible: true }).fill(title);
   await page.getByLabel("Description").filter({ visible: true }).fill("A single sunflower on a long stem.");
@@ -224,10 +236,14 @@ test("the owner adds a product with a photo and it appears in the shop", async (
   expect(replaced.image_path).not.toBe(saved.image_path);
 
   await page.goto("/products");
-  await expect(page.getByRole("link", { name: title })).toBeVisible();
-  await expect(page.getByRole("img", { name: title })).toBeVisible();
-  await page.getByRole("link", { name: title }).click();
+  const pots = page.getByRole("region", { name: /^Fuzzy Wire Pots/ });
+  await expect(pots.getByRole("link", { name: title })).toBeVisible();
+  await expect(pots.getByRole("img", { name: title })).toBeVisible();
+  await pots.getByRole("link", { name: title }).click();
   await expect(page.getByText("₱199.50").filter({ visible: true })).toBeVisible();
+  // The breadcrumb leads back to the category's varieties.
+  await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Fuzzy Wire Pots" }).click();
+  await expect(page).toHaveURL(/\/products#fuzzy-wire-pots$/);
 });
 
 test("the owner downloads orders as a CSV file, and customers can't", async ({ page }) => {

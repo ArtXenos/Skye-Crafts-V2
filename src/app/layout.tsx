@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | Skye Crafts",
   },
   description:
-    "Handmade fuzzy-wire bouquets, keychains, pots and figurines, made to order in the Philippines. Order a ready piece or request a custom gift.",
+    "Handmade fuzzy-wire bouquets, keychains, pots, figurines and accessories, made to order in the Philippines. Order a ready piece or request a custom gift.",
   openGraph: {
     type: "website",
     siteName: "Skye Crafts",

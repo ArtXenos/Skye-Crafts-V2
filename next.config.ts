@@ -39,6 +39,12 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // Next.js refuses to fetch images from private addresses (protection
+    // against SSRF). A local Supabase (`npx supabase start`) lives at
+    // 127.0.0.1, so allow it only then; remotePatterns below still limits
+    // fetching to Supabase's product-images bucket. On Vercel the Supabase
+    // URL is public, so this stays off.
+    dangerouslyAllowLocalIP: /^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/.test(supabaseUrl),
     remotePatterns: supabaseOrigin
       ? [new URL(`${supabaseOrigin}/storage/v1/object/public/product-images/**`)]
       : [],

@@ -3,8 +3,35 @@
 
 export const SHOP_NAME = "Skye Crafts";
 
-export const CATEGORIES = ["Bouquets", "Keychains", "Pots", "Figurines"] as const;
+// Product categories. Each variety the shop sells (a purple bouquet, a
+// sunflower pot, a hair clip) is its own product with its own name, photo,
+// price and stock, filed under one of these. Adding varieties needs no code
+// change; adding a *category* means changing this list and the database
+// constraint together (see the latest migration that touches products).
+export const CATEGORIES = ["Flower Bouquets", "Keychains", "Fuzzy Wire Pots", "Desk Figurines", "Accessories"] as const;
 export type Category = (typeof CATEGORIES)[number];
+
+/** For links and page anchors, e.g. /products#flower-bouquets. */
+export const CATEGORY_SLUGS: Record<Category, string> = {
+  "Flower Bouquets": "flower-bouquets",
+  Keychains: "keychains",
+  "Fuzzy Wire Pots": "fuzzy-wire-pots",
+  "Desk Figurines": "desk-figurines",
+  Accessories: "accessories",
+};
+
+/** What belongs in each category, shown on the shop and admin pages. */
+export const CATEGORY_BLURBS: Record<Category, string> = {
+  "Flower Bouquets": "Wrapped and ribboned bouquets of fuzzy-wire flowers.",
+  Keychains: "Keychains of every kind, from mirror keychains to little charms.",
+  "Fuzzy Wire Pots": "Small potted flowers for a desk or shelf.",
+  "Desk Figurines": "Characters and shapes to sit on a desk.",
+  Accessories: "Hair clips, bracelets and other little things to wear or carry.",
+};
+
+export function categorySlug(category: string) {
+  return CATEGORY_SLUGS[category as Category] ?? "other";
+}
 
 export const ORDER_STATUSES = [
   "Placed", "Approved", "Packed", "Shipped", "Delivered", "Declined", "Cancelled",

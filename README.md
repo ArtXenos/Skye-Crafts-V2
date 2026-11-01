@@ -22,7 +22,7 @@ Read it before changing anything security-related.
 ## What it does
 
 **Customers**
-- Browse and search the collection; product pages with reviews.
+- Browse the collection by category (Flower Bouquets, Keychains, Fuzzy Wire Pots, Desk Figurines, Accessories), each listing its varieties; search; product pages with reviews.
 - Cart kept in the browser, so they can shop before signing up.
 - Checkout: delivery or pickup, GCash or cash on pickup, gift note, coupon.
 - GCash orders show the shop's GCash details; the customer uploads a payment screenshot.

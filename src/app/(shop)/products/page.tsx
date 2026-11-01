@@ -5,7 +5,7 @@ import { getProducts, getRatings } from "@/lib/data/catalog";
 
 export const metadata: Metadata = {
   title: "Shop",
-  description: "Every fuzzy-wire bouquet, keychain, pot and figurine in the Skye Crafts shop.",
+  description: "Every fuzzy-wire bouquet, keychain, pot, figurine and accessory in the Skye Crafts shop.",
 };
 
 export default async function ProductsPage() {

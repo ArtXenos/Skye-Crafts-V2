@@ -205,8 +205,16 @@ Stadia, Mapbox) and add that host to the CSP.
 - **Online payment.** GCash is checked by the owner by eye; there's no payment
   gateway, so no card data ever touches the app.
 - **Delivery fee calculation.** Delivery is local (Governor Generoso, Davao Oriental) and the fee is confirmed by message. J&T Express could be added later.
-- **Categories** are a fixed list (constraint + `src/lib/shop.ts`). Adding one
+- **Categories** are a fixed list: Flower Bouquets, Keychains, Fuzzy Wire Pots,
+  Desk Figurines and Accessories (constraint + `src/lib/shop.ts`). Adding one
   means changing both, on purpose: it's rare and it affects the art and filters.
+  **Varieties** are not a separate table: each variety (a purple bouquet, a
+  sunflower pot, a daisy hair clip) is its own product with its own name,
+  photo, price and stock. That keeps the cart, checkout, stock locking and
+  order history exactly as they are, and the owner adds a variety the same way
+  as any product. Keychains are their own category (every kind of keychain);
+  Accessories holds hair clips, bracelets and other add-ons, so nothing is
+  listed twice.
 - **Deleting accounts.** Orders keep `buyer_id` (`on delete restrict`) so sales
   history can't vanish; deleting a customer is a manual job in Supabase.
 

@@ -42,10 +42,20 @@ describe("registerSchema", () => {
 describe("productSchema", () => {
   it("converts the price to centavos", () => {
     const parsed = productSchema.parse({
-      title: "Tulip", description: "A tulip.", category: "Bouquets",
+      title: "Tulip", description: "A tulip.", category: "Flower Bouquets",
       price: "1,250.50", stock: "3", is_preorder: false, is_active: true,
     });
     expect(parsed).toMatchObject({ price: 125050, stock: 3 });
+  });
+
+  it("knows the five categories, and not the old short names", () => {
+    const product = { title: "Daisy clip", description: "A hair clip.", price: "99", stock: "2", is_preorder: false, is_active: true };
+    for (const category of ["Flower Bouquets", "Keychains", "Fuzzy Wire Pots", "Desk Figurines", "Accessories"]) {
+      expect(productSchema.safeParse({ ...product, category }).success).toBe(true);
+    }
+    for (const category of ["Bouquets", "Pots", "Figurines", "Hair clips"]) {
+      expect(productSchema.safeParse({ ...product, category }).success).toBe(false);
+    }
   });
 });
 

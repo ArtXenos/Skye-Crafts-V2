@@ -28,22 +28,43 @@ describe("catalogue", () => {
 
   it("does not let visitors or customers change products", async () => {
     await expect(
-      db.query(anon, "insert into public.products (title, description, category, price_cents) values ('X X X', 'd', 'Pots', 100)"),
+      db.query(anon, "insert into public.products (title, description, category, price_cents) values ('X X X', 'd', 'Fuzzy Wire Pots', 100)"),
     ).rejects.toMatchObject({ code: "42501" });
     const updated = await db.query(alice, "update public.products set price_cents = 1 where id = 1 returning id");
     expect(updated).toHaveLength(0);
     await expect(
-      db.query(alice, "insert into public.products (title, description, category, price_cents) values ('X X X', 'd', 'Pots', 100)"),
+      db.query(alice, "insert into public.products (title, description, category, price_cents) values ('X X X', 'd', 'Fuzzy Wire Pots', 100)"),
     ).rejects.toMatchObject({ code: "42501" });
   });
 
   it("lets admins add and edit products", async () => {
     const [row] = await db.query<{ id: string }>(
       admin,
-      "insert into public.products (title, description, category, price_cents, stock) values ('Tiny Tulip', 'A tulip.', 'Bouquets', 9900, 3) returning id",
+      "insert into public.products (title, description, category, price_cents, stock) values ('Tiny Tulip', 'A tulip.', 'Flower Bouquets', 9900, 3) returning id",
     );
     const updated = await db.query(admin, "update public.products set stock = 5 where id = $1 returning stock", [row.id]);
     expect(updated).toEqual([{ stock: 5 }]);
+  });
+
+  it("files each variety under one of the five categories", async () => {
+    // The starter products moved to the new names and kept their ids and prices.
+    const starters = await db.sql<{ title: string; category: string; price_cents: number }>(
+      "select title, category, price_cents from public.products where id <= 4 order by id",
+    );
+    expect(starters).toEqual([
+      { title: "Fuzzy Wire Bouquet", category: "Flower Bouquets", price_cents: 45000 },
+      { title: "Mirror Keychain", category: "Keychains", price_cents: 15000 },
+      { title: "Fuzzy Wire Pot", category: "Fuzzy Wire Pots", price_cents: 28000 },
+      { title: "Desk Figurine", category: "Desk Figurines", price_cents: 32000 },
+    ]);
+    const add = (title: string, category: string) =>
+      db.query(admin, "insert into public.products (title, description, category, price_cents) values ($1, 'A variety.', $2, 9900) returning id", [title, category]);
+    expect(await add("Daisy Hair Clip", "Accessories")).toHaveLength(1);
+    expect(await add("Beaded Bracelet", "Accessories")).toHaveLength(1);
+    expect(await add("Tulip Keychain", "Keychains")).toHaveLength(1);
+    for (const old of ["Bouquets", "Pots", "Figurines", "Hair clips"]) {
+      await expect(add("Old Name", old), old).rejects.toMatchObject({ code: "23514" });
+    }
   });
 });
 
