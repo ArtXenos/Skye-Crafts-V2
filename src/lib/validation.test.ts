@@ -86,4 +86,15 @@ describe("settingsSchema", () => {
     expect(settingsSchema.safeParse({ ...valid, facebook_url: "javascript:alert(1)" }).success).toBe(false);
     expect(settingsSchema.safeParse({ ...valid, unpaid_order_hours: "0" }).success).toBe(false);
   });
+
+  it("stores the map pin as lat,lng, or nothing", () => {
+    const base = Object.fromEntries(Object.keys(settingsSchema.shape).map((key) => [key, ""]));
+    const valid = { ...base, unpaid_order_hours: "48", low_stock_threshold: "3" };
+    const pin = (value: string) => settingsSchema.safeParse({ ...valid, pickup_coordinates: value });
+    expect(pin("").data?.pickup_coordinates).toBe("");
+    expect(pin(" 7.0731, 125.6128 ").data?.pickup_coordinates).toBe("7.073100,125.612800");
+    expect(pin("https://www.google.com/maps/@7.0731,125.6128,17z").data?.pickup_coordinates).toBe("7.073100,125.612800");
+    expect(pin("125.6128, 7.0731").success).toBe(false);
+    expect(pin("Davao City").success).toBe(false);
+  });
 });

@@ -3,6 +3,7 @@
 // The database checks the same rules a third time; these exist to give
 // friendly messages before a request is made.
 import { z } from "zod";
+import { formatCoordinates, parseCoordinates } from "@/lib/geo";
 import { pesoToCents } from "@/lib/money";
 import { CATEGORIES, FULFILLMENTS, ORDER_STATUSES, PAYMENT_METHODS, REQUEST_STATUSES } from "@/lib/shop";
 
@@ -243,9 +244,26 @@ const httpsUrl = z
   .max(300)
   .refine((value) => value === "" || /^https:\/\/[^\s<>"]+$/.test(value), "Use a full https:// link, or leave it empty.");
 
+// The owner pastes coordinates or a map link; it's stored as "lat,lng".
+const pickupCoordinates = z
+  .string()
+  .trim()
+  .max(2000, "That link is too long. Paste just the two numbers, for example 7.0731, 125.6128.")
+  .transform((value, ctx) => {
+    if (value === "") return "";
+    const point = parseCoordinates(value);
+    if (point) return formatCoordinates(point);
+    ctx.addIssue({
+      code: "custom",
+      message: "Paste the two numbers from Google Maps (latitude first, for example 7.0731, 125.6128), or tap the map.",
+    });
+    return z.NEVER;
+  });
+
 export const settingsSchema = z.object({
   public_area: optionalText(120, "the area"),
   pickup_location: optionalText(1000, "the pickup location"),
+  pickup_coordinates: pickupCoordinates,
   pickup_schedule: optionalText(1000, "the pickup schedule"),
   gcash_name: optionalText(80, "the GCash name"),
   gcash_number: optionalText(30, "the GCash number"),

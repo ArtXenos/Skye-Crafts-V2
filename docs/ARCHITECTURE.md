@@ -177,6 +177,16 @@ shell. React escapes everything it renders, and no page uses
 here. The end-to-end tests check that a note containing `<b>` shows up as
 text.
 
+The CSP also allows images from `https://tile.openstreetmap.org`, for the
+pickup map. The map is drawn with Leaflet in the browser
+(`src/components/map/`), needs no API key, and gets its location the same way
+as the address: `pickup_coordinates` is a private setting returned only by
+`order_private_details`, once a pickup order is approved. A pin is more exact
+than most addresses, so it must never become public. OpenStreetMap's tile
+servers are free for light use like this; if the shop ever gets heavy traffic,
+switch the tile URL in `leaflet-map.tsx` to a paid provider (MapTiler,
+Stadia, Mapbox) and add that host to the CSP.
+
 ## 6. Deliberately not built (yet)
 
 - **Online payment.** GCash is checked by the owner by eye; there's no payment

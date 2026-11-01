@@ -154,6 +154,7 @@ describe("settings", () => {
     expect(keys).toContain("shipping_note");
     expect(keys).not.toContain("pickup_location");
     expect(keys).not.toContain("gcash_number");
+    expect(keys).not.toContain("pickup_coordinates");
   });
 
   it("lets admins (only) change values", async () => {
@@ -168,6 +169,17 @@ describe("settings", () => {
     await expect(db.query(admin, "update public.shop_settings set value = '0' where key = 'unpaid_order_hours'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = 'javascript:alert(1)' where key = 'facebook_url'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = repeat('9', 31) where key = 'gcash_number'")).rejects.toMatchObject({ code: "23514" });
+  });
+
+  it("only takes a real latitude,longitude for the map pin", async () => {
+    const pin = (value: string) =>
+      db.query(admin, "update public.shop_settings set value = $1 where key = 'pickup_coordinates' returning value", [value]);
+    expect(await pin("7.073100,125.612800")).toHaveLength(1);
+    expect(await pin("-33.868800,151.209300")).toHaveLength(1);
+    expect(await pin("")).toHaveLength(1);
+    for (const bad of ["125.6128,7.0731", "7.07,181", "Davao City", "7.07, 125.61", "1e2,3", "7.07,125.61,3"]) {
+      await expect(pin(bad), bad).rejects.toMatchObject({ code: "23514" });
+    }
   });
 });
 

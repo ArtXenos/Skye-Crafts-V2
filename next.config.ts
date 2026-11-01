@@ -11,11 +11,12 @@ const isHttps = (process.env.NEXT_PUBLIC_SITE_URL ?? "").startsWith("https://");
 // Storage. 'unsafe-inline' for scripts is needed because Next.js inlines
 // small scripts in statically prerendered pages; nonces would force every
 // page to render per request. See docs/ARCHITECTURE.md ("Security headers").
+// Map tiles for the pickup map come from OpenStreetMap.
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob:${supabaseOrigin ? ` ${supabaseOrigin}` : ""}`,
+  `img-src 'self' data: blob: https://tile.openstreetmap.org${supabaseOrigin ? ` ${supabaseOrigin}` : ""}`,
   "font-src 'self'",
   `connect-src 'self'${isDev ? " ws:" : ""}`,
   "object-src 'none'",

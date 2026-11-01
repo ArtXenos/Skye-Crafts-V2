@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { PickupMap } from "@/components/map/pickup-map";
 import { CancelOrderButton, ConfirmReceiptButton, ReceiptUpload } from "@/components/shop/order-actions";
 import { StatusBadge } from "@/components/shop/status-badge";
 import { Notice } from "@/components/ui/form";
@@ -77,6 +78,7 @@ async function OrderDetail({ params, searchParams }: PageProps<"/account/orders/
           <h2 id="pickup-heading" className="text-2xl">Where to pick up</h2>
           <p className="whitespace-pre-line">{details.pickup_location}</p>
           {details.pickup_schedule && <p className="whitespace-pre-line text-ink-soft">{details.pickup_schedule}</p>}
+          {details.pickup_coordinates && <PickupMap coordinates={details.pickup_coordinates} />}
         </section>
       )}
 

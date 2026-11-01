@@ -38,7 +38,7 @@ export async function getOrderPrivateDetails(id: number) {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("order_private_details", { p_order_id: id });
   if (error) return {};
-  return (data ?? {}) as Partial<Record<"gcash_name" | "gcash_number" | "pickup_location" | "pickup_schedule", string>>;
+  return (data ?? {}) as Partial<Record<"gcash_name" | "gcash_number" | "pickup_location" | "pickup_schedule" | "pickup_coordinates", string>>;
 }
 
 export async function getMyCustomRequests() {

@@ -27,7 +27,7 @@ Read it before changing anything security-related.
 - Checkout: delivery or pickup, GCash or cash on pickup, gift note, coupon.
 - GCash orders show the shop's GCash details; the customer uploads a payment screenshot.
 - Order page with status history; cancel until packed; confirm receipt.
-- The pickup address is only shown after the shop confirms the order.
+- The pickup address, with a map pin and a "Get directions" link, is only shown after the shop confirms the order.
 - Reviews, but only for pieces the customer actually received.
 - Custom-piece requests (with or without an account) and a newsletter sign-up.
 - Accounts with email confirmation and password reset.
@@ -104,7 +104,7 @@ To start over with an empty database: `npx supabase db reset`.
 1. Push this repository to GitHub, then **Add New → Project** on [vercel.com](https://vercel.com) and import it.
 2. Add the environment variables from `.env.example` (with your hosted Supabase values and `NEXT_PUBLIC_SITE_URL=https://your-address.vercel.app`).
 3. Deploy. Sign up on the live site and make yourself admin with the SQL above (in the hosted project's SQL Editor).
-4. On `/admin/settings`, enter your GCash details, pickup place and policies.
+4. On `/admin/settings`, enter your GCash details, pickup place and policies. For the map, tap the pickup spot on the map there, or paste the coordinates from Google Maps (long-press the place, then copy the numbers).
 
 ## Tests
 

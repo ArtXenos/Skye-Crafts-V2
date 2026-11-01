@@ -13,6 +13,7 @@ test.beforeAll(async () => {
   await sql("update public.products set stock = 50, is_active = true where title in ('Mirror Keychain', 'Fuzzy Wire Pot')");
   await sql("update public.shop_settings set value = 'Blk 7 Lot 3, Rose Street (test)' where key = 'pickup_location'");
   await sql("update public.shop_settings set value = '0917 555 0000' where key = 'gcash_number'");
+  await sql("update public.shop_settings set value = '7.073100,125.612800' where key = 'pickup_coordinates'");
 });
 
 test("a guest can browse, filter and fill a cart", async ({ page }) => {
@@ -132,6 +133,37 @@ test("the owner confirms the order, and the customer then sees where to pick up"
   await expect(page.getByRole("heading", { name: "Where to pick up" })).toBeVisible();
   await expect(page.getByText("Blk 7 Lot 3, Rose Street (test)").filter({ visible: true })).toBeVisible();
   await expect(page.getByText("Note from the shop: Ready on Saturday!").filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Map of the pickup place" })).toBeVisible();
+  await expect(page.locator(".leaflet-container").filter({ visible: true })).toBeVisible(); // Leaflet loaded
+  await expect(page.getByRole("link", { name: "Get directions (Google Maps)" })).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/dir/?api=1&destination=7.0731,125.6128",
+  );
+  await expectAccessible(page);
+});
+
+test("the owner sets the map pin from a Google Maps link", async ({ page }) => {
+  await logIn(page, owner, "/admin/settings");
+  const field = page.getByLabel("Pickup map pin").filter({ visible: true });
+  await expect(field).toHaveValue("7.073100,125.612800");
+  await expect(page.getByRole("region", { name: "Map for choosing the pickup pin" })).toBeVisible();
+  await expectAccessible(page);
+
+  await field.fill("Davao City");
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByText(/Paste the two numbers from Google Maps/).filter({ visible: true })).toBeVisible();
+
+  await field.fill("https://www.google.com/maps/place/Shop/@7.0700,125.6000,17z/data=!3m1!4b1!4m6!3m5!8m2!3d7.0712!4d125.6105");
+  await field.blur();
+  await expect(field).toHaveValue("7.071200,125.610500"); // tidied to plain numbers
+  await page.getByRole("button", { name: "Save settings" }).click();
+  await expect(page.getByText("Settings saved.").first()).toBeVisible();
+  expect(await sql("select value from public.shop_settings where key = 'pickup_coordinates'")).toEqual([{ value: "7.071200,125.610500" }]);
+
+  // Tapping the map (away from the zoom buttons) moves the pin.
+  await page.getByRole("region", { name: "Map for choosing the pickup pin" }).click({ position: { x: 250, y: 60 } });
+  await expect(field).not.toHaveValue("7.071200,125.610500");
+  await expect(field).toHaveValue(/^7\.\d{6},125\.\d{6}$/);
 });
 
 test("the owner sees the GCash receipt on the order", async ({ page }) => {

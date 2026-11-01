@@ -25,6 +25,7 @@ beforeAll(async () => {
   await db.sql(`update public.shop_settings set value = case key
       when 'pickup_location' then 'Blk 1 Lot 2, Secret Street'
       when 'pickup_schedule' then 'Saturdays 9-11 AM'
+      when 'pickup_coordinates' then '7.073100,125.612800'
       when 'gcash_name' then 'S. C.'
       when 'gcash_number' then '0917 000 0000'
       else value end`);
@@ -123,6 +124,7 @@ describe("private shop details", () => {
     expect(await details(alice, id)).toEqual({
       pickup_location: "Blk 1 Lot 2, Secret Street",
       pickup_schedule: "Saturdays 9-11 AM",
+      pickup_coordinates: "7.073100,125.612800",
     });
     await cancel(alice, id);
     expect(await details(alice, id)).toEqual({});
@@ -130,6 +132,19 @@ describe("private shop details", () => {
 
   it("is not readable from the settings table by customers", async () => {
     expect(await db.query(alice, "select value from public.shop_settings where key = 'pickup_location'")).toHaveLength(0);
+    expect(await db.query(alice, "select value from public.shop_settings where key = 'pickup_coordinates'")).toHaveLength(0);
+  });
+
+  it("leaves the map pin out when the shop hasn't set one", async () => {
+    await db.sql("update public.shop_settings set value = '' where key = 'pickup_coordinates'");
+    try {
+      const id = await placeOrder(db, alice, { fulfillment: "pickup", payment: "cash_on_pickup" });
+      await setStatus(admin, id, "Approved");
+      expect(await details(alice, id)).not.toHaveProperty("pickup_coordinates");
+      await cancel(alice, id);
+    } finally {
+      await db.sql("update public.shop_settings set value = '7.073100,125.612800' where key = 'pickup_coordinates'");
+    }
   });
 });
 
