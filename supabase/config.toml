@@ -244,6 +244,15 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Same links as the hosted project's templates (see /auth/confirm).
+[auth.email.template.confirmation]
+subject = "Confirm your Skye Crafts account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your Skye Crafts password"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
