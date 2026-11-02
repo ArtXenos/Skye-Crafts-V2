@@ -55,9 +55,12 @@ create policy "admins delete receipts" on storage.objects
 -- Scheduled jobs (pg_cron). Every Supabase project has pg_cron available;
 -- if it is not (for example a plain local Postgres), this step is skipped
 -- and expiry still runs before each checkout and on the admin Orders page.
+-- pg_cron can only be installed in one database (cron.database_name, usually
+-- "postgres"), so it is also skipped in the throwaway test databases.
 do $outer$
 begin
-  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron')
+     and coalesce(current_setting('cron.database_name', true), 'postgres') = current_database() then
     create extension if not exists pg_cron;
     perform cron.schedule(
       'skye-expire-stale-orders', '*/10 * * * *',

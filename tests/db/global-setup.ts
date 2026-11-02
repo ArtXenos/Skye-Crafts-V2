@@ -9,7 +9,7 @@ import type { TestProject } from "vitest/node";
 export const TEMPLATE = "skye_template";
 
 export function baseUrl() {
-  return process.env.TEST_DATABASE_URL ?? "postgres://postgres@127.0.0.1:54322/postgres";
+  return process.env.TEST_DATABASE_URL ?? "postgres://postgres:postgres@127.0.0.1:54322/postgres";
 }
 
 export function urlFor(database: string) {
