@@ -26,7 +26,7 @@ export async function register(page: Page, who: ReturnType<typeof person>) {
   await expect(page.getByRole("heading", { level: 1, name: "Create an account" })).toBeVisible();
   await page.getByLabel("Email").filter({ visible: true }).fill(who.email);
   await page.getByLabel("Username").filter({ visible: true }).fill(who.username);
-  await page.getByLabel("Password").filter({ visible: true }).fill(who.password);
+  await page.getByLabel("Password", { exact: true }).filter({ visible: true }).fill(who.password);
   await page.getByRole("button", { name: "Create account" }).click();
 }
 
@@ -34,7 +34,7 @@ export async function logIn(page: Page, who: ReturnType<typeof person>, next = "
   await page.goto(`/login?next=${encodeURIComponent(next)}`);
   await expect(page.getByRole("heading", { level: 1, name: "Welcome back" })).toBeVisible();
   await page.getByLabel("Email").filter({ visible: true }).fill(who.email);
-  await page.getByLabel("Password").filter({ visible: true }).fill(who.password);
+  await page.getByLabel("Password", { exact: true }).filter({ visible: true }).fill(who.password);
   await page.getByRole("button", { name: "Log in" }).click();
   await page.waitForURL((url) => url.pathname === next.split("?")[0]);
 }

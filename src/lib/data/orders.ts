@@ -48,7 +48,7 @@ export async function getMyCustomRequests() {
   const { data: claims } = await supabase.auth.getClaims();
   const { data, error } = await supabase
     .from("custom_requests")
-    .select("id, occasion, details, status, quote_cents, shop_note, created_at")
+    .select("id, contact, occasion, details, status, quote_cents, shop_note, created_at")
     .eq("user_id", claims?.claims.sub ?? "")
     .order("id", { ascending: false })
     .limit(50);

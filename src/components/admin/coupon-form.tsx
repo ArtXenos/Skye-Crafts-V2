@@ -41,14 +41,18 @@ export function CouponForm({ couponId, initial, usedCount = 0 }: { couponId: num
           {(p) => <Input inputMode="decimal" placeholder={percentage ? "10" : "50"} {...p} {...form.register("discount_value")} />}
         </Field>
         {percentage && (
-          <Field label="Most it can take off (₱)" optional hint="Leave empty for no limit." error={errors.max_discount?.message}>
+          <Field label="Discount Cap (₱)" optional
+            hint="The most this coupon can deduct from one order (percentage coupons only). Leave empty for no cap."
+            error={errors.max_discount?.message}>
             {(p) => <Input inputMode="decimal" {...p} {...form.register("max_discount")} />}
           </Field>
         )}
         <Field label="Minimum order (₱)" optional error={errors.min_order?.message}>
           {(p) => <Input inputMode="decimal" {...p} {...form.register("min_order")} />}
         </Field>
-        <Field label="Total uses allowed" hint={`0 means unlimited.${usedCount ? ` Used ${usedCount} time${usedCount === 1 ? "" : "s"} so far.` : ""}`} error={errors.max_uses?.message}>
+        <Field label="Usage Limit"
+          hint={`How many times this coupon can be used in total. With 'One use per customer' on, this is also how many customers can use it. 0 = unlimited.${usedCount ? ` Used ${usedCount} time${usedCount === 1 ? "" : "s"} so far.` : ""}`}
+          error={errors.max_uses?.message}>
           {(p) => <Input type="number" min={0} step={1} {...p} {...form.register("max_uses")} />}
         </Field>
         <Field label="First day" hint="Philippine time." error={errors.starts_on?.message}>

@@ -72,6 +72,20 @@ const isoDate = z
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }, "That date doesn't exist.");
 
+// A Philippine mobile number: 09XXXXXXXXX, +639XXXXXXXXX or 639XXXXXXXXX,
+// with any spaces or dashes. Saved as 09XXXXXXXXX (the database does the same).
+const phMobile = z
+  .string()
+  .trim()
+  .transform((value, ctx) => {
+    const match = /^(?:0|\+?63)(9[0-9]{9})$/.exec(value.replace(/[\s-]/g, ""));
+    if (!match) {
+      ctx.addIssue({ code: "custom", message: "Enter a valid PH mobile number, e.g. 0917 123 4567." });
+      return z.NEVER;
+    }
+    return `0${match[1]}`;
+  });
+
 // accounts ------------------------------------------------------------------
 
 export const usernameSchema = z
@@ -111,10 +125,7 @@ export const cartItemSchema = z.object({
 export const checkoutSchema = z
   .object({
     recipient: text(2, 80, "the recipient's name"),
-    contact: z
-      .string()
-      .trim()
-      .regex(/^[0-9+() -]{7,40}$/, "Enter a mobile number (digits, spaces, + or -)."),
+    contact: phMobile,
     fulfillment: z.enum(FULFILLMENTS, "Choose delivery or pickup."),
     address: optionalText(500, "the address"),
     payment_method: z.enum(PAYMENT_METHODS, "Choose how you will pay."),
@@ -156,6 +167,12 @@ export const customRequestSchema = z.object({
   details: text(10, 2000, "your idea"),
 });
 export type CustomRequestInput = z.input<typeof customRequestSchema>;
+
+/** A customer changing their own request: only these three fields. */
+export const customRequestEditSchema = customRequestSchema
+  .pick({ contact: true, occasion: true, details: true })
+  .extend({ id: z.number().int().positive() });
+export type CustomRequestEditInput = z.input<typeof customRequestEditSchema>;
 
 export const newsletterSchema = z.object({ email });
 

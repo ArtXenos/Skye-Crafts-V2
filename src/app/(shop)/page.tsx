@@ -1,10 +1,13 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { ProductArt, WireDivider } from "@/components/shop/art";
 import { HeroBouquet } from "@/components/shop/hero-bouquet";
 import { Policies } from "@/components/shop/policies";
 import { ProductCard } from "@/components/shop/product-card";
 import { CustomRequestForm } from "@/components/shop/public-forms";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/form";
+import { getCurrentUser } from "@/lib/auth";
 import { getProducts, getPublicSettings, getRatings } from "@/lib/data/catalog";
 import { CATEGORIES, categorySlug } from "@/lib/shop";
 
@@ -14,6 +17,17 @@ const STEPS = [
   { title: "We shape it by hand", text: "Every stem and petal is bent, twisted and wrapped one at a time." },
   { title: "Pick up or get it delivered", text: "Collect it in person, or have it brought to your door nearby." },
 ];
+
+// Only requests sent while logged in can be changed later (under My orders).
+async function GuestRequestNote() {
+  if (await getCurrentUser()) return null;
+  return (
+    <Notice className="mb-5">
+      <Link href="/login?next=%2F%23custom" className="font-semibold underline decoration-bloom-deep underline-offset-4">Log in</Link>{" "}
+      before sending if you might want to change it later.
+    </Notice>
+  );
+}
 
 export default async function HomePage() {
   const [products, ratings, settings] = await Promise.all([getProducts(), getRatings(), getPublicSettings()]);
@@ -103,6 +117,9 @@ export default async function HomePage() {
         </div>
         <div className="rounded-[var(--radius-tile)] bg-white p-6 ring-2 ring-line sm:p-8">
           <h3 className="mb-5 text-2xl">Request a custom piece</h3>
+          <Suspense fallback={null}>
+            <GuestRequestNote />
+          </Suspense>
           <CustomRequestForm />
         </div>
       </section>

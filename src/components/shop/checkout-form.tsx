@@ -120,7 +120,7 @@ export function CheckoutForm({ products, settings, email }: { products: Product[
             {(p) => <Input autoComplete="name" {...p} {...form.register("recipient")} />}
           </Field>
           <Field label="Mobile number" hint="For delivery updates and pickup arrangements." error={errors.contact?.message}>
-            {(p) => <Input type="tel" inputMode="tel" autoComplete="tel" placeholder="0917 123 4567" {...p} {...form.register("contact")} />}
+            {(p) => <Input type="tel" inputMode="numeric" autoComplete="tel" placeholder="09XX XXX XXXX" {...p} {...form.register("contact")} />}
           </Field>
         </fieldset>
 

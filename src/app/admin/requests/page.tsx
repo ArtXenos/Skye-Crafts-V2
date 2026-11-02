@@ -31,6 +31,9 @@ async function AdminRequests() {
                   {request.name}{request.occasion ? `, ${request.occasion}` : ""}
                   <span className="font-normal text-ink-soft"> ({request.profiles ? `account ${request.profiles.username}` : "guest"}, {formatDateTime(request.created_at)})</span>
                 </p>
+                {request.edited_at && (
+                  <p className="text-sm font-semibold text-bloom-deep">Edited by customer {formatDateTime(request.edited_at)}</p>
+                )}
                 <p>Contact: <span className="font-semibold">{request.contact}</span></p>
                 <p className="whitespace-pre-line rounded-xl bg-paper p-3">{request.details}</p>
               </div>

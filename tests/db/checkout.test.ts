@@ -130,6 +130,57 @@ describe("size limit", () => {
   });
 });
 
+describe("mobile number", () => {
+  let caller: Actor & { id: string };
+  beforeAll(async () => {
+    caller = await db.createUser("caller");
+    await db.sql("update public.products set stock = 1000 where id = 1");
+  });
+  const contactOf = async (id: number) =>
+    (await db.sql<{ contact: string }>("select contact from public.orders where id = $1", [id]))[0].contact;
+
+  it.each(["09171234567", "0917 123 4567", "+639171234567", "63-917-123-4567", "+63 917-123-4567"])(
+    "saves %s as 09XXXXXXXXX",
+    async (contact) => {
+      const id = await placeOrder(db, caller, { contact });
+      expect(await contactOf(id)).toBe("09171234567");
+      await db.sql("update public.orders set status = 'Cancelled' where id = $1", [id]);
+    },
+  );
+
+  it.each(["08171234567", "0917123456", "(082) 123 4567", "+63 82 123 4567"])("rejects %s", async (contact) => {
+    await expect(placeOrder(db, caller, { contact }))
+      .rejects.toEqual(appError("invalid", "Enter a valid PH mobile number, e.g. 0917 123 4567."));
+  });
+
+  it("is checked again if an order's number is changed", async () => {
+    const id = await placeOrder(db, caller);
+    await expect(db.sql("update public.orders set contact = '12345678' where id = $1", [id])).rejects.toEqual(appError("invalid"));
+    await db.sql("update public.orders set contact = '+63 918 555 0101' where id = $1", [id]);
+    expect(await contactOf(id)).toBe("09185550101");
+    await db.sql("update public.orders set status = 'Cancelled' where id = $1", [id]);
+  });
+
+  it("doesn't block old orders saved with another kind of number", async () => {
+    const owner = await db.createUser("phone_owner", { admin: true });
+    const id = await placeOrder(db, caller);
+    await db.sql(`alter table public.orders disable trigger orders_contact_ph_mobile;
+      update public.orders set contact = '(082) 123 4567' where id = ${id};
+      alter table public.orders enable trigger orders_contact_ph_mobile;`);
+    await db.query(owner, "select public.admin_set_order_status($1, 'Approved')", [id]);
+    expect(await db.sql("select status, contact from public.orders where id = $1", [id]))
+      .toEqual([{ status: "Approved", contact: "(082) 123 4567" }]);
+  });
+
+  it("converts old numbers the same way when the migration runs", async () => {
+    const convert = async (value: string) =>
+      (await db.sql<{ v: string | null }>("select private.ph_mobile($1) as v", [value]))[0].v;
+    expect(await convert("0917 123 4567")).toBe("09171234567");
+    expect(await convert("+63 917-123-4567")).toBe("09171234567");
+    expect(await convert("(082) 123 4567")).toBeNull();
+  });
+});
+
 describe("limits", () => {
   it("allows at most 3 unconfirmed orders per customer", async () => {
     const shopper = await db.createUser("shopper");

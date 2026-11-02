@@ -185,6 +185,7 @@ test("the owner sees the GCash receipt on the order", async ({ page }) => {
 
 test("a guest custom request reaches the owner, who can quote it", async ({ page }) => {
   await page.goto("/#custom");
+  await expect(page.getByText("before sending if you might want to change it later.").filter({ visible: true })).toBeVisible();
   await page.getByLabel("Your name").filter({ visible: true }).fill(`Guest ${run}`);
   await page.getByLabel("Email or mobile number").filter({ visible: true }).fill("guest@example.com");
   await page.getByLabel("Your idea").filter({ visible: true }).fill("A graduation bouquet in maroon and gold, about 30 cm tall.");
@@ -198,6 +199,41 @@ test("a guest custom request reaches the owner, who can quote it", async ({ page
   await card.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Request updated.").filter({ visible: true })).toBeVisible();
   await expectAccessible(page);
+});
+
+test("a customer edits their request, and the owner sees it was edited", async ({ page }) => {
+  // Made directly, so reruns don't hit the request form's hourly limit.
+  const details = `A sunflower bouquet for a graduation (${run})`;
+  await sql(`insert into public.custom_requests (user_id, name, contact, details)
+    select id, 'Maria', 'maria@example.com', $2 from public.profiles where username = $1`, [buyer.username, details]);
+
+  await logIn(page, buyer, "/account");
+  const card = page.getByRole("listitem").filter({ hasText: details });
+  await expect(card.getByText("New", { exact: true })).toBeVisible();
+  await card.getByRole("button", { name: "Edit request" }).click();
+  await card.getByLabel("Your idea").fill(`${details}, in yellow and white`);
+  await expectAccessible(page);
+  await card.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Request updated.").first()).toBeVisible();
+  const edited = page.getByRole("listitem").filter({ hasText: `${details}, in yellow and white` });
+  await expect(edited.getByRole("button", { name: "Edit request" })).toBeVisible();
+
+  // A quoted request warns that changing it withdraws the quote.
+  await sql("update public.custom_requests set status = 'Quoted', quote_cents = 60000 where details like $1", [`${details}%`]);
+  await page.reload();
+  await edited.getByRole("button", { name: "Edit request" }).click();
+  await expect(edited.getByText("Changing your request withdraws the current quote and the shop will quote again.")).toBeVisible();
+  await edited.getByRole("button", { name: "Cancel" }).click();
+
+  // Once the shop has started, it's locked.
+  await sql("update public.custom_requests set status = 'In progress' where details like $1", [`${details}%`]);
+  await page.reload();
+  await expect(edited.getByText("This request is locked. Contact the shop to change it.")).toBeVisible();
+  await expect(edited.getByRole("button", { name: "Edit request" })).toHaveCount(0);
+
+  await logOut(page);
+  await logIn(page, owner, "/admin/requests");
+  await expect(page.getByRole("listitem").filter({ hasText: `${details}, in yellow and white` }).getByText(/^Edited by customer /)).toBeVisible();
 });
 
 test("the owner adds a product with a photo and it appears in the shop", async ({ page }) => {
@@ -291,6 +327,52 @@ test("a coupon applies at checkout and the total is charged correctly", async ({
   await expect(page.getByText("₱135").filter({ visible: true }).first()).toBeVisible();
 });
 
+test("checkout refuses a mobile number that isn't a PH mobile number", async ({ page }) => {
+  await logIn(page, buyer, "/products/2");
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await page.goto("/checkout");
+  await page.getByLabel("Recipient's name").filter({ visible: true }).fill("Maria Santos");
+  const mobile = page.getByLabel("Mobile number").filter({ visible: true });
+  await expect(mobile).toHaveAttribute("type", "tel");
+  await expect(mobile).toHaveAttribute("inputmode", "numeric");
+  await expect(mobile).toHaveAttribute("placeholder", "09XX XXX XXXX");
+  await mobile.fill("0817 123 4567");
+  await page.getByLabel("Delivery address").filter({ visible: true }).fill("12 Rizal Street, Barangay 5, Davao City");
+  await page.getByRole("button", { name: "Place order" }).click();
+  await expect(page.getByText("Enter a valid PH mobile number, e.g. 0917 123 4567.").filter({ visible: true })).toBeVisible();
+  await expect(mobile).toHaveAttribute("aria-invalid", "true");
+  await expect(page).toHaveURL(/\/checkout$/);
+});
+
+test("the password can be shown, and is hidden again when the form is sent", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { level: 1, name: "Welcome back" })).toBeVisible();
+  const field = page.getByLabel("Password", { exact: true }).filter({ visible: true });
+  await field.fill("not-the-right-password");
+  await expect(field).toHaveAttribute("type", "password");
+
+  // Reachable from the keyboard, big enough to tap, and doesn't send the form.
+  const show = page.getByRole("button", { name: "Show password" });
+  await expect(show).toHaveAttribute("aria-pressed", "false");
+  const box = await show.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await field.focus();
+  await page.keyboard.press("Tab");
+  await expect(show).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(field).toHaveAttribute("type", "text");
+  await expect(page.getByRole("button", { name: "Hide password" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("That email and password don't match an account.")).toHaveCount(0);
+  await expectAccessible(page);
+
+  await page.getByLabel("Email").filter({ visible: true }).fill(buyer.email);
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByText("That email and password don't match an account.").filter({ visible: true })).toBeVisible();
+  await expect(field).toHaveAttribute("type", "password");
+  await expect(page.getByRole("button", { name: "Show password" })).toHaveAttribute("aria-pressed", "false");
+});
+
 test("saving a product doesn't undo stock that sold in the meantime", async ({ page }) => {
   const [{ id }] = await sql("select id from public.products where title = 'Fuzzy Wire Pot'");
   await sql("update public.products set stock = 10 where id = $1", [id]);
@@ -317,7 +399,7 @@ test("a login link can't send people to another website afterwards", async ({ pa
   await page.goto("/login?next=" + encodeURIComponent("/\t/evil.example"));
   await expect(page.getByRole("heading", { level: 1, name: "Welcome back" })).toBeVisible();
   await page.getByLabel("Email").filter({ visible: true }).fill(buyer.email);
-  await page.getByLabel("Password").filter({ visible: true }).fill(buyer.password);
+  await page.getByLabel("Password", { exact: true }).filter({ visible: true }).fill(buyer.password);
   await page.getByRole("button", { name: "Log in" }).click();
   await page.waitForURL((url) => url.pathname === "/account");
   expect(new URL(page.url()).host).toBe(new URL(test.info().project.use.baseURL ?? "http://localhost:3000").host);

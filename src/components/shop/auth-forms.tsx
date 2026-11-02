@@ -7,6 +7,7 @@ import type { z } from "zod";
 import { requestPasswordReset, signIn, signOut, signUp, updatePassword } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Notice } from "@/components/ui/form";
+import { PasswordInput } from "@/components/ui/password-input";
 import { formResolver } from "@/components/form-resolver";
 import { useActionForm } from "@/components/use-action-form";
 import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema, type LoginInput, type RegisterInput } from "@/lib/validation";
@@ -39,7 +40,7 @@ export function LoginForm({ next }: { next: string }) {
         {(p) => <Input type="email" autoComplete="email" {...p} {...form.register("email")} />}
       </Field>
       <Field label="Password" error={errors.password?.message}>
-        {(p) => <Input type="password" autoComplete="current-password" {...p} {...form.register("password")} />}
+        {(p) => <PasswordInput autoComplete="current-password" {...p} {...form.register("password")} />}
       </Field>
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       <Button type="submit" size="lg" disabled={pending}>{pending ? "Logging in…" : "Log in"}</Button>
@@ -78,7 +79,7 @@ export function RegisterForm({ next }: { next: string }) {
         {(p) => <Input autoComplete="username" {...p} {...form.register("username")} />}
       </Field>
       <Field label="Password" hint="At least 10 characters." error={errors.password?.message}>
-        {(p) => <Input type="password" autoComplete="new-password" {...p} {...form.register("password")} />}
+        {(p) => <PasswordInput autoComplete="new-password" {...p} {...form.register("password")} />}
       </Field>
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       <Button type="submit" size="lg" disabled={pending}>{pending ? "Creating your account…" : "Create account"}</Button>
@@ -108,10 +109,10 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={submit} noValidate className="grid gap-4">
       <Field label="New password" hint="At least 10 characters." error={errors.password?.message}>
-        {(p) => <Input type="password" autoComplete="new-password" {...p} {...form.register("password")} />}
+        {(p) => <PasswordInput autoComplete="new-password" {...p} {...form.register("password")} />}
       </Field>
       <Field label="Type it again" error={errors.confirm?.message}>
-        {(p) => <Input type="password" autoComplete="new-password" {...p} {...form.register("confirm")} />}
+        {(p) => <PasswordInput autoComplete="new-password" {...p} {...form.register("confirm")} />}
       </Field>
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
       <Button type="submit" size="lg" disabled={pending}>{pending ? "Saving…" : "Save new password"}</Button>

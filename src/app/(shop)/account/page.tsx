@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { LogOutButton } from "@/components/shop/auth-forms";
+import { EditRequestForm } from "@/components/shop/public-forms";
 import { StatusBadge } from "@/components/shop/status-badge";
 import { Notice } from "@/components/ui/form";
 import { requireUser } from "@/lib/auth";
@@ -79,6 +80,11 @@ async function Account({ searchParams }: Pick<PageProps<"/account">, "searchPara
                 <p className="line-clamp-3 text-ink-soft">{request.details}</p>
                 {request.quote_cents !== null && <p className="font-semibold">Quote: {formatPeso(request.quote_cents)}</p>}
                 {request.shop_note && <p className="rounded-[var(--radius-field)] bg-petal px-4 py-3">From the shop: {request.shop_note}</p>}
+                {request.status === "New" || request.status === "Quoted" ? (
+                  <EditRequestForm request={request} />
+                ) : (
+                  <p className="text-sm text-ink-soft">This request is locked. Contact the shop to change it.</p>
+                )}
               </li>
             ))}
           </ul>

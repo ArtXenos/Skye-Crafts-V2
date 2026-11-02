@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkoutSchema, couponSchema, exportSchema, productSchema, registerSchema, settingsSchema } from "./validation";
+import { checkoutSchema, couponSchema, customRequestEditSchema, exportSchema, productSchema, registerSchema, settingsSchema } from "./validation";
 
 const checkout = {
   recipient: "Maria Santos",
@@ -26,8 +26,36 @@ describe("checkoutSchema", () => {
     expect(checkoutSchema.safeParse({ ...checkout, fulfillment: "pickup", payment_method: "cash_on_pickup" }).success).toBe(true);
   });
 
-  it("rejects letters in the mobile number", () => {
-    expect(checkoutSchema.safeParse({ ...checkout, contact: "call me" }).success).toBe(false);
+  it.each(["09171234567", "0917 123 4567", "+639171234567", "63-917-123-4567", "+63 917-123-4567"])(
+    "accepts the PH mobile number %s and saves it as 09XXXXXXXXX",
+    (contact) => {
+      expect(checkoutSchema.parse({ ...checkout, contact }).contact).toBe("09171234567");
+    },
+  );
+
+  it.each([
+    ["a number not starting with 09", "08171234567"],
+    ["10 digits", "0917123456"],
+    ["12 digits", "091712345678"],
+    ["letters", "call me"],
+    ["letters mixed in", "0917 123 456a"],
+    ["a landline", "(082) 123 4567"],
+    ["a landline with the country code", "+63 82 123 4567"],
+    ["an empty field", ""],
+  ])("rejects %s", (_label, contact) => {
+    const result = checkoutSchema.safeParse({ ...checkout, contact });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0].message).toBe("Enter a valid PH mobile number, e.g. 0917 123 4567.");
+  });
+});
+
+describe("customRequestEditSchema", () => {
+  it("keeps only the fields a customer may change", () => {
+    const parsed = customRequestEditSchema.parse({
+      id: 4, contact: " maria@example.com ", occasion: "", details: "A pink bouquet with 12 roses",
+      status: "Completed", quote_cents: 1, shop_note: "hi",
+    });
+    expect(parsed).toEqual({ id: 4, contact: "maria@example.com", occasion: "", details: "A pink bouquet with 12 roses" });
   });
 });
 

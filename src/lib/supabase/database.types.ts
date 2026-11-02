@@ -57,6 +57,7 @@ export type Database = {
           contact: string;
           created_at: string;
           details: string;
+          edited_at: string | null;
           id: number;
           name: string;
           occasion: string;
@@ -71,6 +72,7 @@ export type Database = {
           contact: string;
           created_at?: string;
           details: string;
+          edited_at?: string | null;
           id?: never;
           name: string;
           occasion?: string;
@@ -84,6 +86,7 @@ export type Database = {
           contact?: string;
           created_at?: string;
           details?: string;
+          edited_at?: string | null;
           id?: never;
           name?: string;
           occasion?: string;
@@ -519,6 +522,10 @@ export type Database = {
       subscribe_newsletter: {
         Args: { p_client_hash: string; p_email: string };
         Returns: undefined;
+      };
+      update_custom_request: {
+        Args: { p_contact: string; p_details: string; p_id: number; p_occasion: string };
+        Returns: string;
       };
     };
     Enums: {

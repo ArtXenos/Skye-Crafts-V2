@@ -8,7 +8,7 @@ export function stockLabel(product: Pick<Product, "is_preorder" | "stock">) {
   if (product.is_preorder) return { text: "Made to order", tone: "text-wire" };
   if (product.stock <= 0) return { text: "Sold out", tone: "text-ink-soft" };
   if (product.stock <= 3) return { text: `Only ${product.stock} left`, tone: "text-bloom-deep" };
-  return { text: "Ready now", tone: "text-leaf" };
+  return { text: "Stock available", tone: "text-leaf" };
 }
 
 export function ProductCard({ product, rating }: { product: Product; rating?: RatingSummary }) {

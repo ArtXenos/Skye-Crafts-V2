@@ -16,6 +16,7 @@ import { checkImage } from "@/lib/uploads";
 import {
   checkoutRequestSchema,
   couponQuoteSchema,
+  customRequestEditSchema,
   customRequestSchema,
   newsletterSchema,
   reviewSchema,
@@ -68,6 +69,24 @@ export async function submitCustomRequest(input: unknown): Promise<ActionResult>
       ? "Request sent. You'll see the shop's reply and quote under My orders."
       : "Request sent. The shop will reply to the contact details you gave.",
   );
+}
+
+export async function editCustomRequest(input: unknown): Promise<ActionResult> {
+  const parsed = customRequestEditSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  if (!(await getCurrentUser())) return LOGIN_FIRST;
+
+  // The database checks it is the customer's own request and still open.
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_custom_request", {
+    p_id: parsed.data.id,
+    p_contact: parsed.data.contact,
+    p_occasion: parsed.data.occasion,
+    p_details: parsed.data.details,
+  });
+  if (error) return fromDatabaseError(error, "update_custom_request");
+  refresh();
+  return success(null, "Request updated. The shop will see your changes.");
 }
 
 // checkout ------------------------------------------------------------------
