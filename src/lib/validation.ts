@@ -296,6 +296,7 @@ export const settingsSchema = z.object({
     .regex(/^([1-9][0-9]?|1[0-5][0-9]|16[0-8])$/, "Use a whole number of hours from 1 to 168."),
   low_stock_threshold: z.string().trim().regex(/^[0-9]{1,4}$/, "Use a whole number."),
   contact_phone: optionalText(30, "the phone number"),
+  contact_email: z.string().trim().pipe(z.union([z.literal(""), email])),
   facebook_url: httpsUrl,
   tiktok_url: httpsUrl,
 });

@@ -1,25 +1,38 @@
 import type { PublicSettings } from "@/lib/data/catalog";
+import { hoursLabel, joinSentences } from "@/lib/text";
 
-/** The shop's promises, written by the owner on the admin Settings page. */
+/**
+ * The shop's promises, written by the owner on the admin Settings page.
+ * A setting left empty drops its sentence, and a question with no answer is
+ * left out.
+ */
 export function Policies({ settings }: { settings: PublicSettings }) {
-  const hours = settings.unpaid_order_hours || "48";
+  const hours = hoursLabel(settings.unpaid_order_hours || "48");
   const items = [
     {
       q: "How long does an order take?",
-      a: `Ready pieces: ${settings.lead_time_ready}. Custom pieces: ${settings.lead_time_custom}.`,
+      a: joinSentences(
+        settings.lead_time_ready && `Ready pieces: ${settings.lead_time_ready}`,
+        settings.lead_time_custom && `Custom pieces: ${settings.lead_time_custom}`,
+      ),
     },
     {
       q: "How do I pay?",
-      a: `Pay by GCash: the shop's GCash details appear on your order page right after you order. For pickup orders you can also pay cash when you collect. Orders that aren't paid or confirmed within ${hours} hours are cancelled automatically so the pieces go back on sale.`,
+      a: `Pay by GCash: the shop's GCash details appear on your order page right after you order. For pickup orders you can also pay cash when you collect. Orders that aren't paid or confirmed within ${hours} are cancelled automatically so the pieces go back on sale.`,
     },
     {
       q: "Delivery or pickup?",
-      a: `${settings.shipping_note} Pickup is in ${settings.public_area}. ${settings.pickup_schedule} The exact pickup place is shown on your order page once the shop confirms your order.`,
+      a: joinSentences(
+        settings.shipping_note,
+        settings.public_area && `Pickup is in ${settings.public_area}`,
+        settings.pickup_schedule,
+        "The exact pickup place is shown on your order page once the shop confirms your order",
+      ),
     },
-    { q: "Can I cancel?", a: settings.cancellation_note },
-    { q: "What if something arrives damaged?", a: settings.damaged_note },
-    { q: "How do refunds work?", a: settings.refund_note },
-  ];
+    { q: "Can I cancel?", a: joinSentences(settings.cancellation_note) },
+    { q: "What if something arrives damaged?", a: joinSentences(settings.damaged_note) },
+    { q: "How do refunds work?", a: joinSentences(settings.refund_note) },
+  ].filter((item) => item.a);
 
   return (
     <dl className="grid gap-x-12 gap-y-8 md:grid-cols-2">

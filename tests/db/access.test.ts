@@ -190,6 +190,22 @@ describe("settings", () => {
     await expect(db.query(admin, "update public.shop_settings set value = '0' where key = 'unpaid_order_hours'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = 'javascript:alert(1)' where key = 'facebook_url'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = repeat('9', 31) where key = 'gcash_number'")).rejects.toMatchObject({ code: "23514" });
+    await expect(db.query(admin, "update public.shop_settings set value = 'not an email' where key = 'contact_email'")).rejects.toMatchObject({ code: "23514" });
+    expect(await db.query(admin, "update public.shop_settings set value = 'hello@example.com' where key = 'contact_email' returning key")).toHaveLength(1);
+  });
+
+  it("only takes a plain lowercase contact email, so nothing can ride along in the mailto: link", async () => {
+    const contactEmail = (value: string) =>
+      db.query<{ value: string }>(admin, "update public.shop_settings set value = $1 where key = 'contact_email' returning value", [value]);
+    for (const bad of ["Hello@Example.com", "a@b.co?subject=x", "a@b.co&body=x", "a b@c.co", "a@b.co,c@d.co", "hello@", `${"a".repeat(250)}@b.co`]) {
+      await expect(contactEmail(bad), bad).rejects.toMatchObject({ code: "23514" });
+    }
+    expect(await contactEmail("hello.shop+orders@gmail.com")).toEqual([{ value: "hello.shop+orders@gmail.com" }]);
+    expect(await contactEmail("")).toEqual([{ value: "" }]);
+  });
+
+  it("does not apply the email rule to other settings", async () => {
+    expect(await db.query(admin, "update public.shop_settings set value = 'Davao City?' where key = 'public_area' returning key")).toHaveLength(1);
   });
 
   it("only takes a real latitude,longitude for the map pin", async () => {

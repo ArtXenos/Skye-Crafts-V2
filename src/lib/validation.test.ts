@@ -123,6 +123,48 @@ describe("settingsSchema", () => {
     expect(settingsSchema.safeParse({ ...valid, facebook_url: "https://facebook.com/skye" }).success).toBe(true);
     expect(settingsSchema.safeParse({ ...valid, facebook_url: "javascript:alert(1)" }).success).toBe(false);
     expect(settingsSchema.safeParse({ ...valid, unpaid_order_hours: "0" }).success).toBe(false);
+    expect(settingsSchema.safeParse({ ...valid, contact_email: "hello@example.com" }).success).toBe(true);
+    expect(settingsSchema.safeParse({ ...valid, contact_email: "not an email" }).success).toBe(false);
+  });
+
+  it("saves the contact email lowercase, in a form the database accepts", () => {
+    const base = Object.fromEntries(Object.keys(settingsSchema.shape).map((key) => [key, ""]));
+    const valid = { ...base, unpaid_order_hours: "48", low_stock_threshold: "3" };
+    const contactEmail = (value: string) => settingsSchema.safeParse({ ...valid, contact_email: value });
+    // The same rule as shop_settings_contact_email_check in the database.
+    const databaseAccepts = (value: string) =>
+      value === "" || (value.length <= 254 && value === value.toLowerCase() && /^[a-z0-9._+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(value));
+
+    expect(contactEmail("Hello@Example.com").data?.contact_email).toBe("hello@example.com");
+    expect(contactEmail("  HELLO.Shop+Orders@Gmail.com ").data?.contact_email).toBe("hello.shop+orders@gmail.com");
+    expect(contactEmail("").data?.contact_email).toBe("");
+
+    const examples = [
+      "hello@example.com",
+      "Hello@Example.com",
+      "hello.shop+orders@gmail.com",
+      "o'brien@example.ph",
+      "a@b.co?subject=x",
+      "a@b.co&body=x",
+      "a b@c.co",
+      "a@b.co,c@d.co",
+      "",
+    ];
+    for (const example of examples) {
+      const parsed = contactEmail(example);
+      if (!parsed.success) continue;
+      const saved = parsed.data.contact_email;
+      expect(saved, example).toBe(saved.toLowerCase());
+      expect(databaseAccepts(saved), example).toBe(true);
+    }
+  });
+
+  it("refuses a contact email that could add to the mailto: link", () => {
+    const base = Object.fromEntries(Object.keys(settingsSchema.shape).map((key) => [key, ""]));
+    const valid = { ...base, unpaid_order_hours: "48", low_stock_threshold: "3" };
+    for (const bad of ["a@b.co?subject=x", "a@b.co&body=x", "a b@c.co", "a@b.co,c@d.co", `${"a".repeat(250)}@b.co`]) {
+      expect(settingsSchema.safeParse({ ...valid, contact_email: bad }).success, bad).toBe(false);
+    }
   });
 
   it("stores the map pin as lat,lng, or nothing", () => {

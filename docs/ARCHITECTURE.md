@@ -259,17 +259,23 @@ Found in an independent review and left as they are, on purpose or for later:
   the pickup place; a custom request is quoted; a product is added with a
   photo. Every page visited is scanned with axe for WCAG 2.1 AA problems.
 
-## 9. Check your understanding
+## 9. Running it in production
 
-If you can answer these without looking, you understand the system:
-
-1. A customer edits the page's JavaScript to send `price_cents: 1` at checkout. Why does nothing change?
-2. Why does `place_order` lock products in id order?
-3. Someone calls `update orders set status = 'Delivered'` through PostgREST with their own login. What stops them, and in which file?
-4. Why is `submit_custom_request` callable only with the secret key, while `place_order` is callable by any logged-in customer?
-5. What would break if `getProducts()` used `createClient()` (with cookies) instead of `createPublicClient()`?
-6. A GCash order was placed 3 days ago, the receipt was uploaded, and the owner hasn't confirmed it. Will it expire? Why is that the right behaviour?
-7. Why does the checkout form get a new checkout key after a successful order?
-8. Where would you add a new setting, and which three files must change?
-9. Why are failed coupon guesses returned as `{ok: false}` instead of raised as errors? (Hint: transactions.)
-10. What does `safeNextPath` stop, and how could the login page be abused without it?
+- **Region.** `vercel.json` pins the server code to Singapore (`sin1`), where
+  the Supabase project is. Every page and action talks to the database, often
+  several times; from Vercel's default US region each call would cross the
+  Pacific.
+- **Keep-alive.** Supabase pauses free-plan projects after a week without
+  activity, and cached pages mean visitors don't always reach the database.
+  Vercel Cron calls [`/api/keepalive`](../src/app/api/keepalive/route.ts) daily; it
+  only answers requests that carry `CRON_SECRET`.
+- **Email.** [`src/lib/email.ts`](../src/lib/email.ts) sends order updates by SMTP (Gmail
+  with an app password works without a domain) or by Resend. Account emails
+  (sign-up, password reset) are sent by Supabase Auth, which needs the same SMTP
+  details in its dashboard. Emails go out in `after()`, and a failure is only
+  logged, so a mail problem never blocks an order.
+- **Backups.** `npm run db:backup` (see README). Storage files are not included.
+- **Legal pages.** [`/privacy`](../src/app/(shop)/privacy/page.tsx) and [`/terms`](../src/app/(shop)/terms/page.tsx) read the
+  shop's settings (policies, contact details), so they stay in step with what
+  the owner writes on `/admin/settings`. Update the "Last updated" date when
+  the wording changes.
