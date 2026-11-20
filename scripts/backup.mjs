@@ -10,9 +10,11 @@
 import { spawnSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
-const dir = join("backups", stamp);
+// Always <project>/backups, wherever this is run from, so it stays inside the gitignored folder.
+const dir = join(fileURLToPath(new URL("../backups/", import.meta.url)), stamp);
 mkdirSync(dir, { recursive: true });
 
 const steps = [

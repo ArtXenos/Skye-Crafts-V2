@@ -1,7 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContactLine, LegalPage, LegalSection } from "@/components/shop/legal-page";
+import { ContactLine, ExternalLink, LegalPage, LegalSection } from "@/components/shop/legal-page";
 import { getPublicSettings, TAGS } from "@/lib/data/catalog";
 
 export const metadata: Metadata = {
@@ -14,7 +14,9 @@ export default async function PrivacyPage() {
   cacheLife("days");
   cacheTag(TAGS.settings);
   const settings = await getPublicSettings();
-  const contact = <ContactLine email={settings.contact_email} phone={settings.contact_phone} facebook={settings.facebook_url} />;
+  const contact = (
+    <ContactLine email={settings.contact_email} phone={settings.contact_phone} facebook={settings.facebook_url} tiktok={settings.tiktok_url} />
+  );
 
   return (
     <LegalPage
@@ -63,8 +65,12 @@ export default async function PrivacyPage() {
           (local storage), not on our servers, until you place an order. Neither is used to track you on other sites.
         </p>
         <p>
-          To limit abuse of the public forms, the site keeps a one-way scrambled code made from your network address. The
-          address itself is not stored and can&apos;t be worked out from the code.
+          To limit abuse of the public forms, the site keeps a one-way scrambled code made from your network address, for
+          two days. The address can&apos;t be worked out from the code.
+        </p>
+        <p>
+          Like most websites, our hosting and database providers keep short-lived technical logs, including network
+          addresses, to keep the service secure and working.
         </p>
       </LegalSection>
 
@@ -73,12 +79,16 @@ export default async function PrivacyPage() {
         <ul className="grid gap-2">
           <li><strong>Supabase</strong>: stores the shop&apos;s database, accounts and uploaded photos, on servers in Singapore.</li>
           <li><strong>Vercel</strong>: hosts the website.</li>
-          <li><strong>Our email provider</strong>: sends account and order emails.</li>
+          <li><strong>Google (Gmail)</strong>: sends account and order emails.</li>
           <li><strong>OpenStreetMap</strong>: shows the pickup map on confirmed pickup orders. Your browser loads map pictures from it.</li>
         </ul>
         <p>
-          The exact pickup place and the shop&apos;s GCash details are only shown on your own order. We share your details
-          with a courier only when needed to deliver your order. We may also disclose information when the law requires it.
+          Some of these providers handle information outside the Philippines. We choose providers that keep it secure, and
+          we stay responsible for your information wherever it is handled.
+        </p>
+        <p>
+          The exact pickup place and the shop&apos;s GCash details are only shown on your own order. We share your name,
+          number and address only with the person delivering your order. We may also disclose information when the law requires it.
         </p>
       </LegalSection>
 
@@ -86,7 +96,7 @@ export default async function PrivacyPage() {
         <p>
           Order records are kept for as long as we must keep sales and tax records under Philippine law. Payment screenshots,
           requests and newsletter sign-ups are kept only while they are useful to the shop, and you may ask us to remove them
-          sooner. If you close your account, we keep only what the law requires us to keep.
+          sooner. If you ask us to close your account, we delete your details except what the law requires us to keep.
         </p>
       </LegalSection>
 
@@ -96,8 +106,8 @@ export default async function PrivacyPage() {
           <li>be told how your information is used (this page);</li>
           <li>see the information we hold about you and get a copy of it;</li>
           <li>have wrong or out-of-date information corrected;</li>
-          <li>object to its use, withdraw your consent (for example, leave the newsletter) or ask us to delete it, except what the law requires us to keep;</li>
-          <li>complain to the <a href="https://privacy.gov.ph" target="_blank" rel="noopener noreferrer">National Privacy Commission</a> if you think your information was mishandled.</li>
+          <li>object to its use, withdraw your consent (for example, ask us to take you off the newsletter) or ask us to delete it, except what the law requires us to keep;</li>
+          <li>complain to the <ExternalLink href="https://privacy.gov.ph">National Privacy Commission</ExternalLink> if you think your information was mishandled.</li>
         </ul>
         <p>To use any of these rights, contact us {contact}. We may ask you to confirm who you are first, so nobody else can get your information.</p>
       </LegalSection>

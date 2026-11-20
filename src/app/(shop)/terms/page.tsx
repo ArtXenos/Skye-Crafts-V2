@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ContactLine, LegalPage, LegalSection } from "@/components/shop/legal-page";
 import { getPublicSettings, TAGS } from "@/lib/data/catalog";
+import { hoursLabel, joinSentences } from "@/lib/text";
 
 export const metadata: Metadata = {
   title: "Terms of Sale",
@@ -14,8 +15,26 @@ export default async function TermsPage() {
   cacheLife("days");
   cacheTag(TAGS.settings);
   const settings = await getPublicSettings();
-  const hours = settings.unpaid_order_hours || "48";
-  const contact = <ContactLine email={settings.contact_email} phone={settings.contact_phone} facebook={settings.facebook_url} />;
+  const hours = hoursLabel(settings.unpaid_order_hours || "48");
+  const contact = (
+    <ContactLine email={settings.contact_email} phone={settings.contact_phone} facebook={settings.facebook_url} tiktok={settings.tiktok_url} />
+  );
+  // Settings the owner left empty drop their sentence.
+  const leadTimes = joinSentences(
+    settings.lead_time_ready && `Ready pieces: ${settings.lead_time_ready}`,
+    settings.lead_time_custom && `Custom pieces: ${settings.lead_time_custom}`,
+  );
+  const delivery = joinSentences(
+    settings.shipping_note,
+    settings.public_area && `Pickup is in ${settings.public_area}`,
+    settings.pickup_schedule,
+    "The exact pickup place is shown on your order page once the shop confirms your order",
+  );
+  const policies = [
+    { label: "Cancelling", text: joinSentences(settings.cancellation_note) },
+    { label: "Damaged pieces", text: joinSentences(settings.damaged_note) },
+    { label: "Refunds", text: joinSentences(settings.refund_note) },
+  ].filter((policy) => policy.text);
 
   return (
     <LegalPage
@@ -42,30 +61,26 @@ export default async function TermsPage() {
           to buy: the shop confirms it, or declines it if a piece can&apos;t be made or supplied, in which case any payment
           is returned in full.
         </p>
-        <p>
-          Ready pieces: {settings.lead_time_ready}. Custom pieces: {settings.lead_time_custom}.
-        </p>
+        {leadTimes && <p>{leadTimes}</p>}
       </LegalSection>
 
       <LegalSection title="Payment">
         <p>
           Pay by GCash using the details shown on your order page, then upload a screenshot of the payment. For pickup
-          orders you can also pay cash when you collect. Orders that aren&apos;t paid or confirmed within {hours} hours are
+          orders you can also pay cash when you collect. Orders that aren&apos;t paid or confirmed within {hours} are
           cancelled automatically, so the pieces go back on sale.
         </p>
       </LegalSection>
 
       <LegalSection title="Delivery and pickup">
-        <p>
-          {settings.shipping_note} Pickup is in {settings.public_area}. {settings.pickup_schedule} The exact pickup place is
-          shown on your order page once the shop confirms your order.
-        </p>
+        <p>{delivery}</p>
       </LegalSection>
 
       <LegalSection title="Cancellations, damage and refunds">
-        <p><strong>Cancelling:</strong> {settings.cancellation_note}</p>
-        <p><strong>Damaged pieces:</strong> {settings.damaged_note}</p>
-        <p><strong>Refunds:</strong> {settings.refund_note}</p>
+        {policies.map((policy) => (
+          <p key={policy.label}><strong>{policy.label}:</strong> {policy.text}</p>
+        ))}
+        <p>For anything not covered here, contact us {contact}.</p>
       </LegalSection>
 
       <LegalSection title="Custom requests">

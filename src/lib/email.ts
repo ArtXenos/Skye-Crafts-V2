@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createTransport } from "nodemailer";
+import { z } from "zod";
 import { SITE_URL } from "@/lib/env";
 import { formatPeso } from "@/lib/money";
 import { customerStatusLabel, SHOP_NAME } from "@/lib/shop";
@@ -22,7 +23,8 @@ type Message = { to: string; subject: string; text: string };
  * block an order change.
  */
 export async function sendOrderStatusEmail(order: OrderForEmail) {
-  if (!order.buyer_email) return;
+  // One plain address only: mail libraries treat commas as several recipients.
+  if (!z.email().safeParse(order.buyer_email).success) return;
 
   const status = customerStatusLabel(order.status, order.fulfillment);
   const lines = [
@@ -33,6 +35,8 @@ export async function sendOrderStatusEmail(order: OrderForEmail) {
     `Total: ${formatPeso(order.total_cents)}`,
     "",
     `See your order: ${SITE_URL}/account/orders/${order.id}`,
+    // Gmail (SMTP) sends from the shop's own inbox, so replies reach the owner.
+    ...(process.env.SMTP_HOST ? ["", "Questions about your order? Just reply to this email."] : []),
   ].filter((line, index, all) => line !== "" || all[index - 1] !== "");
 
   await sendEmail({ to: order.buyer_email, subject: `Order #${order.id}: ${status}`, text: lines.join("\n") });

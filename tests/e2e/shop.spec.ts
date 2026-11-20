@@ -57,6 +57,36 @@ test("the privacy and terms pages are linked from the footer", async ({ page }) 
   await expectAccessible(page);
 });
 
+test("the footer and the sign-up form link to the privacy and terms pages", async ({ page }) => {
+  await page.goto("/");
+  const legal = page.getByRole("navigation", { name: "Legal" });
+  await expect(legal.getByRole("link", { name: "Privacy", exact: true })).toHaveAttribute("href", "/privacy");
+  await expect(legal.getByRole("link", { name: "Terms", exact: true })).toHaveAttribute("href", "/terms");
+
+  // On the sign-up form they open in a new tab, so a half-filled form isn't lost, and say so.
+  await page.goto("/register");
+  await expect(page.getByRole("heading", { level: 1, name: "Create an account" })).toBeVisible();
+  const terms = page.getByRole("link", { name: "Terms of Sale (opens in a new tab)" });
+  const privacy = page.getByRole("link", { name: "Privacy Policy (opens in a new tab)" });
+  await expect(terms).toHaveAttribute("href", "/terms");
+  await expect(terms).toHaveAttribute("target", "_blank");
+  await expect(privacy).toHaveAttribute("href", "/privacy");
+  await expect(privacy).toHaveAttribute("target", "_blank");
+
+  const [tab] = await Promise.all([page.context().waitForEvent("page"), terms.click()]);
+  await expect(tab.getByRole("heading", { level: 1, name: "Terms of Sale" })).toBeVisible();
+  await tab.close();
+  await expect(page.getByRole("heading", { level: 1, name: "Create an account" })).toBeVisible();
+});
+
+test("the keep-alive route refuses callers without the cron secret", async ({ request }) => {
+  expect((await request.get("/api/keepalive")).status()).toBe(401);
+  expect((await request.get("/api/keepalive", { headers: { Authorization: "" } })).status()).toBe(401);
+  expect((await request.get("/api/keepalive", { headers: { Authorization: "Bearer " } })).status()).toBe(401);
+  expect((await request.get("/api/keepalive", { headers: { Authorization: `Bearer wrong-${run}` } })).status()).toBe(401);
+  expect((await request.get("/api/keepalive", { headers: { Authorization: `Basic wrong-${run}` } })).status()).toBe(401);
+});
+
 test("checkout asks a guest to sign up, then keeps their cart", async ({ page }) => {
   await page.goto("/products");
   await page.getByRole("link", { name: "Fuzzy Wire Pot" }).click();
@@ -184,6 +214,93 @@ test("the owner sets the map pin from a Google Maps link", async ({ page }) => {
   await expect(field).toHaveValue(/^7\.\d{6},125\.\d{6}$/);
 });
 
+test("settings the owner leaves empty drop their sentence instead of leaving broken text", async ({ page }) => {
+  // The pages are cached ("use cache", tag "settings"), and only saving on the
+  // Settings page refreshes them, so the settings are changed (and put back)
+  // through the owner's form rather than with SQL.
+  const fields = {
+    public_area: "Town or area",
+    lead_time_ready: "Lead time for ready pieces",
+    lead_time_custom: "Lead time for custom pieces",
+    cancellation_note: "Cancellation policy",
+    contact_email: "Contact email",
+    contact_phone: "Contact number",
+    facebook_url: "Facebook page link",
+    tiktok_url: "TikTok link",
+  } as const;
+  const keys = Object.keys(fields);
+  const before = Object.fromEntries(
+    (await sql("select key, value from public.shop_settings where key = any($1)", [keys])).map((row) => [row.key, row.value]),
+  ) as Record<keyof typeof fields, string>;
+
+  const saveSettings = async (values: Record<keyof typeof fields, string>) => {
+    await page.goto("/admin/settings");
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+    for (const [key, label] of Object.entries(fields) as [keyof typeof fields, string][]) {
+      await page.getByLabel(label, { exact: true }).filter({ visible: true }).fill(values[key]);
+    }
+    await page.getByRole("button", { name: "Save settings" }).click();
+    await expect(page.getByText("Settings saved.").first()).toBeVisible();
+  };
+  // Shown without the line breaks between paragraphs, the way a sentence would run on.
+  const brokenText = [/Pickup is in\s*\./, /:\s*\./, /Ready pieces:\s*\./, /Custom pieces:\s*\./, /\s\.(\s|$)/, /\.\s*\./];
+
+  await logIn(page, owner, "/admin/settings");
+  try {
+    await saveSettings(Object.fromEntries(keys.map((key) => [key, ""])) as Record<keyof typeof fields, string>);
+    expect(await sql("select value from public.shop_settings where key = any($1) and value <> ''", [keys])).toEqual([]);
+
+    await page.goto("/terms");
+    await expect(page.getByRole("heading", { level: 1, name: "Terms of Sale" })).toBeVisible();
+    const terms = await page.getByRole("main").innerText();
+    for (const broken of brokenText) expect(terms).not.toMatch(broken);
+    expect(terms).not.toContain("Pickup is in");
+    expect(terms).not.toContain("Ready pieces");
+    expect(terms).not.toContain("Custom pieces:");
+    expect(terms).not.toContain("Cancelling:");
+    await expect(page.getByText("The exact pickup place is shown on your order page once the shop confirms your order.")).toBeVisible();
+    await expect(
+      page.getByText("For anything not covered here, contact us by sending a message through the request form on our home page."),
+    ).toBeVisible();
+    for (const link of await page.getByRole("main").getByRole("link", { name: "request form on our home page" }).all()) {
+      await expect(link).toHaveAttribute("href", "/#custom");
+    }
+    await expectAccessible(page);
+
+    await page.goto("/privacy");
+    await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
+    const privacy = await page.getByRole("main").innerText();
+    for (const broken of brokenText) expect(privacy).not.toMatch(broken);
+    await expect(page.getByText(/To use any of these rights, contact us by sending a message through the request form on our home page\./)).toBeVisible();
+    await expect(page.getByRole("main").getByRole("link", { name: "request form on our home page" }).first()).toHaveAttribute("href", "/#custom");
+    await expect(page.getByRole("main").locator('a[href^="mailto:"], a[href^="tel:"]')).toHaveCount(0);
+
+    await page.goto("/");
+    const help = page.getByRole("region", { name: "Before you order" });
+    await expect(help).toBeVisible();
+    const answers = await help.innerText();
+    for (const broken of brokenText) expect(answers).not.toMatch(broken);
+    expect(answers).not.toContain("Pickup is in");
+    expect(answers).not.toContain("Ready pieces");
+    await expect(help.getByText("How long does an order take?")).toHaveCount(0); // no answer, so no question
+    await expect(help.getByText("Can I cancel?")).toHaveCount(0);
+    await expect(help.getByText("Delivery or pickup?")).toBeVisible();
+    await expect(page.locator("footer").locator('a[href^="mailto:"], a[href^="tel:"]')).toHaveCount(0);
+  } finally {
+    await saveSettings(before);
+    expect(
+      Object.fromEntries((await sql("select key, value from public.shop_settings where key = any($1)", [keys])).map((row) => [row.key, row.value])),
+    ).toEqual(before);
+  }
+
+  // Filled in again, the sentences come back.
+  await page.goto("/terms");
+  const terms = await page.getByRole("main").innerText();
+  if (before.public_area) expect(terms).toContain(`Pickup is in ${before.public_area}`);
+  if (before.lead_time_ready) expect(terms).toContain(`Ready pieces: ${before.lead_time_ready}`);
+  if (before.cancellation_note) expect(terms).toContain("Cancelling:");
+});
+
 test("the owner sees the GCash receipt on the order", async ({ page }) => {
   await logIn(page, owner, "/admin");
   await page.getByLabel("Search").filter({ visible: true }).fill(buyer.username.slice(0, 5));
@@ -287,7 +404,10 @@ test("the owner adds a product with a photo and it appears in the shop", async (
   await expect(pots.getByRole("link", { name: title })).toBeVisible();
   await expect(pots.getByRole("img", { name: title })).toBeVisible();
   await pots.getByRole("link", { name: title }).click();
-  await expect(page.getByText("₱199.50").filter({ visible: true })).toBeVisible();
+  // Wait for the product page itself: until then the collection's cards (with
+  // the same price, from earlier test runs) are still on screen.
+  await expect(page.getByRole("heading", { level: 1, name: title })).toBeVisible();
+  await expect(page.getByRole("main").getByText("₱199.50", { exact: true }).filter({ visible: true })).toBeVisible();
   // The breadcrumb leads back to the category's varieties.
   await page.getByRole("navigation", { name: "Breadcrumb" }).getByRole("link", { name: "Fuzzy Wire Pots" }).click();
   await expect(page).toHaveURL(/\/products#fuzzy-wire-pots$/);

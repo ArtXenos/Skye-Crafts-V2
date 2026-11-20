@@ -194,6 +194,20 @@ describe("settings", () => {
     expect(await db.query(admin, "update public.shop_settings set value = 'hello@example.com' where key = 'contact_email' returning key")).toHaveLength(1);
   });
 
+  it("only takes a plain lowercase contact email, so nothing can ride along in the mailto: link", async () => {
+    const contactEmail = (value: string) =>
+      db.query<{ value: string }>(admin, "update public.shop_settings set value = $1 where key = 'contact_email' returning value", [value]);
+    for (const bad of ["Hello@Example.com", "a@b.co?subject=x", "a@b.co&body=x", "a b@c.co", "a@b.co,c@d.co", "hello@", `${"a".repeat(250)}@b.co`]) {
+      await expect(contactEmail(bad), bad).rejects.toMatchObject({ code: "23514" });
+    }
+    expect(await contactEmail("hello.shop+orders@gmail.com")).toEqual([{ value: "hello.shop+orders@gmail.com" }]);
+    expect(await contactEmail("")).toEqual([{ value: "" }]);
+  });
+
+  it("does not apply the email rule to other settings", async () => {
+    expect(await db.query(admin, "update public.shop_settings set value = 'Davao City?' where key = 'public_area' returning key")).toHaveLength(1);
+  });
+
   it("only takes a real latitude,longitude for the map pin", async () => {
     const pin = (value: string) =>
       db.query(admin, "update public.shop_settings set value = $1 where key = 'pickup_coordinates' returning value", [value]);

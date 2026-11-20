@@ -15,12 +15,16 @@ alter table public.shop_settings add constraint shop_settings_key_check check (k
   'facebook_url', 'tiktok_url', 'contact_phone', 'contact_email'
 ));
 
--- 2. Empty (hidden), or something shaped like an email address. The general
---    length check allows 400 characters; an address is at most 254.
+-- 2. Empty (hidden), or a plain lowercase email address. Only letters, digits
+--    and . _ + ' - before the @, so nothing like ?subject= can ride along in
+--    the mailto: link. The general length check allows 400; an address is at
+--    most 254. The app (zod) accepts a subset of this and lowercases it.
 alter table public.shop_settings add constraint shop_settings_contact_email_check check (
   key <> 'contact_email'
   or value = ''
-  or (char_length(value) <= 254 and value ~ '^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$')
+  or (char_length(value) <= 254
+      and value = lower(value)
+      and value ~ '^[a-z0-9._+''-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$')
 );
 
 insert into public.shop_settings (key, value, is_private)

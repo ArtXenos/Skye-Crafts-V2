@@ -7,12 +7,13 @@
 // Vercel sends "Authorization: Bearer <CRON_SECRET>" when the CRON_SECRET
 // environment variable is set; anyone else gets a 401, so the route can't be
 // used to hammer the database.
+import { createHash, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { createPublicClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secret || !sameText(request.headers.get("authorization") ?? "", `Bearer ${secret}`)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -22,4 +23,10 @@ export async function GET(request: NextRequest) {
     return Response.json({ ok: false }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
   return Response.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
+}
+
+/** Compares in constant time, so response timing can't reveal the secret. */
+function sameText(a: string, b: string) {
+  const digest = (text: string) => createHash("sha256").update(text).digest();
+  return timingSafeEqual(digest(a), digest(b));
 }

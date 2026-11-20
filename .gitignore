@@ -48,7 +48,7 @@ next-env.d.ts
 /playwright/.cache/
 
 # database backups (npm run db:backup): customer data, never commit
-/backups/
+backups/
 
 # supabase cli
 supabase/.temp/

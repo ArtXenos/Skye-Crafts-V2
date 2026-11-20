@@ -154,7 +154,7 @@ database, and calls `/api/keepalive` once a day so Supabase doesn't pause.
 ### Updating the live site
 
 1. Database changes first: `npx supabase db push` (it only sends new files in `supabase/migrations`).
-2. Then push the code to `main` on GitHub. Vercel deploys it automatically; CI runs the tests.
+2. Then push the code to `main` on GitHub. Vercel deploys it automatically. GitHub CI runs lint, types, unit and database tests; run `npm run build` and `npm run test:e2e` yourself first.
 
 ### Backups
 

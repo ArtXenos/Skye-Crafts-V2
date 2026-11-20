@@ -14,7 +14,7 @@ export async function SiteFooter() {
   ].filter((item) => item.href);
 
   return (
-    <footer className="mt-24 bg-ink text-paper">
+    <footer className="mt-24 bg-ink text-paper [&_:focus-visible]:outline-bloom">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.2fr_1fr_1.4fr]">
         <div className="grid content-start gap-3">
           <p className="font-display text-3xl">Skye Crafts</p>
@@ -35,7 +35,7 @@ export async function SiteFooter() {
             </a>
           )}
           {settings.contact_email && (
-            <a href={`mailto:${settings.contact_email}`} className="w-fit underline decoration-bloom underline-offset-4 hover:decoration-paper">
+            <a href={`mailto:${settings.contact_email}`} className="w-fit [overflow-wrap:anywhere] underline decoration-bloom underline-offset-4 hover:decoration-paper">
               {settings.contact_email}
             </a>
           )}
@@ -43,15 +43,15 @@ export async function SiteFooter() {
             Ordering help and policies
           </Link>
         </div>
-        <div className="rounded-[var(--radius-tile)] bg-paper p-5 text-ink">
+        <div className="rounded-[var(--radius-tile)] bg-paper p-5 text-ink [&_:focus-visible]:outline-bloom-deep">
           <NewsletterForm />
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-paper/15 px-4 py-5 text-center text-sm text-paper/70">
         <p>© {new Date().getFullYear()} Skye Crafts. Made by hand in the Philippines.</p>
-        <nav aria-label="Legal" className="flex gap-4">
-          <Link href="/privacy" className="underline underline-offset-4 hover:text-paper">Privacy</Link>
-          <Link href="/terms" className="underline underline-offset-4 hover:text-paper">Terms</Link>
+        <nav aria-label="Legal" className="flex gap-2">
+          <Link href="/privacy" className="inline-block px-2 py-2 underline underline-offset-4 hover:text-paper">Privacy</Link>
+          <Link href="/terms" className="inline-block px-2 py-2 underline underline-offset-4 hover:text-paper">Terms</Link>
         </nav>
       </div>
     </footer>
