@@ -46,6 +46,17 @@ test("a guest can browse, filter and fill a cart", async ({ page }) => {
   await expectAccessible(page);
 });
 
+test("the privacy and terms pages are linked from the footer", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation", { name: "Legal" }).getByRole("link", { name: "Privacy" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Privacy Policy" })).toBeVisible();
+  await expect(page.getByText("Data Privacy Act of 2012").first()).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole("navigation", { name: "Legal" }).getByRole("link", { name: "Terms" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Terms of Sale" })).toBeVisible();
+  await expectAccessible(page);
+});
+
 test("checkout asks a guest to sign up, then keeps their cart", async ({ page }) => {
   await page.goto("/products");
   await page.getByRole("link", { name: "Fuzzy Wire Pot" }).click();

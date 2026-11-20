@@ -190,6 +190,8 @@ describe("settings", () => {
     await expect(db.query(admin, "update public.shop_settings set value = '0' where key = 'unpaid_order_hours'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = 'javascript:alert(1)' where key = 'facebook_url'")).rejects.toMatchObject({ code: "23514" });
     await expect(db.query(admin, "update public.shop_settings set value = repeat('9', 31) where key = 'gcash_number'")).rejects.toMatchObject({ code: "23514" });
+    await expect(db.query(admin, "update public.shop_settings set value = 'not an email' where key = 'contact_email'")).rejects.toMatchObject({ code: "23514" });
+    expect(await db.query(admin, "update public.shop_settings set value = 'hello@example.com' where key = 'contact_email' returning key")).toHaveLength(1);
   });
 
   it("only takes a real latitude,longitude for the map pin", async () => {

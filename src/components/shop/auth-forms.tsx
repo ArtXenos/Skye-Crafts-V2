@@ -82,6 +82,10 @@ export function RegisterForm({ next }: { next: string }) {
         {(p) => <PasswordInput autoComplete="new-password" {...p} {...form.register("password")} />}
       </Field>
       {message && <Notice tone={message.tone}>{message.text}</Notice>}
+      <p className="text-sm text-ink-soft">
+        By creating an account you agree to the <Link href="/terms" className={`${linkClass} text-ink`}>Terms of Sale</Link> and
+        the <Link href="/privacy" className={`${linkClass} text-ink`}>Privacy Policy</Link>.
+      </p>
       <Button type="submit" size="lg" disabled={pending}>{pending ? "Creating your account…" : "Create account"}</Button>
       <p className="text-ink-soft">Already have an account? <Link href={`/login?next=${encodeURIComponent(next)}`} className={`${linkClass} text-ink`}>Log in</Link></p>
     </form>

@@ -123,6 +123,8 @@ describe("settingsSchema", () => {
     expect(settingsSchema.safeParse({ ...valid, facebook_url: "https://facebook.com/skye" }).success).toBe(true);
     expect(settingsSchema.safeParse({ ...valid, facebook_url: "javascript:alert(1)" }).success).toBe(false);
     expect(settingsSchema.safeParse({ ...valid, unpaid_order_hours: "0" }).success).toBe(false);
+    expect(settingsSchema.safeParse({ ...valid, contact_email: "hello@example.com" }).success).toBe(true);
+    expect(settingsSchema.safeParse({ ...valid, contact_email: "not an email" }).success).toBe(false);
   });
 
   it("stores the map pin as lat,lng, or nothing", () => {

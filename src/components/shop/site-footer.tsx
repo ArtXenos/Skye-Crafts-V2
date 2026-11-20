@@ -34,6 +34,11 @@ export async function SiteFooter() {
               {settings.contact_phone}
             </a>
           )}
+          {settings.contact_email && (
+            <a href={`mailto:${settings.contact_email}`} className="w-fit underline decoration-bloom underline-offset-4 hover:decoration-paper">
+              {settings.contact_email}
+            </a>
+          )}
           <Link href="/#help" className="w-fit underline decoration-bloom underline-offset-4 hover:decoration-paper">
             Ordering help and policies
           </Link>
@@ -42,9 +47,13 @@ export async function SiteFooter() {
           <NewsletterForm />
         </div>
       </div>
-      <p className="border-t border-paper/15 px-4 py-5 text-center text-sm text-paper/70">
-        © {new Date().getFullYear()} Skye Crafts. Made by hand in the Philippines.
-      </p>
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-paper/15 px-4 py-5 text-center text-sm text-paper/70">
+        <p>© {new Date().getFullYear()} Skye Crafts. Made by hand in the Philippines.</p>
+        <nav aria-label="Legal" className="flex gap-4">
+          <Link href="/privacy" className="underline underline-offset-4 hover:text-paper">Privacy</Link>
+          <Link href="/terms" className="underline underline-offset-4 hover:text-paper">Terms</Link>
+        </nav>
+      </div>
     </footer>
   );
 }

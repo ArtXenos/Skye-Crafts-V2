@@ -96,6 +96,7 @@ const SETTING_FIELDS: { title: string; fields: { key: SettingKey; label: string;
       { key: "damaged_note", label: "Damaged items", long: true },
       { key: "refund_note", label: "Refunds", long: true },
       { key: "contact_phone", label: "Contact number", hint: "Shown in the footer. Leave empty to hide." },
+      { key: "contact_email", label: "Contact email", hint: "Shown in the footer and on the Privacy page, where customers ask about their personal data. Leave empty to hide." },
       { key: "facebook_url", label: "Facebook page link", hint: "A full https:// link. Leave empty to hide." },
       { key: "tiktok_url", label: "TikTok link", hint: "A full https:// link. Leave empty to hide." },
     ],
